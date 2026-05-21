@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Build
+.next/
+out/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PlatformIO
+.pio/
+firmware/*/.pio/
+
+# Misc
+*.log
+scratch/
+build_submission.sh
+AYULINK_FULL_CODEBASE.md

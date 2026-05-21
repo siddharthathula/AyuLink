@@ -1,0 +1,44 @@
+================================================================================
+AyuLink IoT Ecosystem — Accessible Portal Links
+================================================================================
+
+🏠 MAIN PORTALS
+--------------------------------------------------------------------------------
+Landing Page:       http://localhost:3000/
+PHC Dashboard:      http://localhost:3000/dashboard
+Emergency Console:  http://localhost:3000/emergency
+
+👩‍⚕️ FIELD WORKER PORTALS
+--------------------------------------------------------------------------------
+ASHA Worker Cockpit: http://localhost:3000/asha
+ASHA Visits Log:     http://localhost:3000/asha-visits
+Paramedic (EMS):     http://localhost:3000/paramedic/dashboard
+
+👨‍👩‍👧 PATIENT & FAMILY
+--------------------------------------------------------------------------------
+Family Login:        http://localhost:3000/family-login
+Family Dashboard:    http://localhost:3000/family-dashboard/P_01
+Patient List:        http://localhost:3000/patients
+Patient Detail (108): http://localhost:3000/patients/P_01
+
+📊 MONITORING & ANALYTICS
+--------------------------------------------------------------------------------
+Vitals Monitor:      http://localhost:3000/vitals
+Analytics Engine:    http://localhost:3000/analytics
+Health Reports:      http://localhost:3000/reports
+Summary Stats:       http://localhost:3000/stats
+
+⚙️ SYSTEM MANAGEMENT
+--------------------------------------------------------------------------------
+Pill Dispensers:     http://localhost:3000/dispensers
+Prescription Manager: http://localhost:3000/prescriptions
+Appointments:        http://localhost:3000/appointments
+IoT Device Status:   http://localhost:3000/devices
+LoRa Mesh Topology:  http://localhost:3000/lora-mesh
+AI Triage Agent:     http://localhost:3000/agent
+Notification Log:    http://localhost:3000/notifications
+Patient Records:     http://localhost:3000/records
+
+--------------------------------------------------------------------------------
+AyuLink — Smart Health. Zero Boundaries.
+================================================================================

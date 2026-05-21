@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AyuLink — Remote Patient Monitoring</title>
+    <meta name="description" content="Real-time IoT remote patient monitoring dashboard for elder care">
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏥</text></svg>">
+</head>
+<body>
+<div class="app-wrapper">
+
+    <!-- ═══ Header ═══ -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">🏥</div>
+                <div>
+                    <div class="logo-text">AyuLink</div>
+                    <div class="logo-subtitle">Remote Patient Monitoring</div>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div id="gateway-badge" class="status-badge offline">
+                <span class="status-dot red"></span>
+                <span id="gateway-text">Gateway Offline</span>
+            </div>
+            <div id="hub-badge" class="status-badge offline">
+                <span class="status-dot red"></span>
+                <span id="hub-text">Hub Offline</span>
+            </div>
+            <div id="ws-badge" class="status-badge online">
+                <span class="status-dot green"></span>
+                <span>Agent Live</span>
+            </div>
+            <div class="clock" id="clock">--:--:--</div>
+        </div>
+    </header>
+
+    <!-- ═══ Main Grid ═══ -->
+    <main class="main-grid">
+
+        <!-- ── Stats Row ── -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon patients">👥</div>
+                <div>
+                    <div class="stat-value" id="stat-patients">0</div>
+                    <div class="stat-label">Total Patients</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon online">📡</div>
+                <div>
+                    <div class="stat-value" id="stat-online">0</div>
+                    <div class="stat-label">Online Now</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon alerts">🚨</div>
+                <div>
+                    <div class="stat-value" id="stat-alerts">0</div>
+                    <div class="stat-label">Alerts</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon packets">📦</div>
+                <div>
+                    <div class="stat-value" id="stat-packets">0</div>
+                    <div class="stat-label">Packets RX</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon uptime">⏱</div>
+                <div>
+                    <div class="stat-value" id="stat-uptime">0s</div>
+                    <div class="stat-label">Uptime</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ECG Waveform ── -->
+        <div class="card ecg-card">
+            <div class="ecg-header">
+                <div class="card-title"><span class="icon">💓</span> Live ECG Waveform</div>
+                <div class="ecg-patient-select" id="ecg-patient-btns"></div>
+            </div>
+            <div class="ecg-canvas-wrap">
+                <canvas id="ecg-canvas"></canvas>
+                <div class="ecg-vitals-overlay">
+                    <div class="ecg-vital-item vital-hr">
+                        <span class="vital-label">HR</span>
+                        <span class="vital-value" id="overlay-hr">--</span>
+                        <span class="vital-unit">bpm</span>
+                    </div>
+                    <div class="ecg-vital-item vital-spo2">
+                        <span class="vital-label">SpO2</span>
+                        <span class="vital-value" id="overlay-spo2">--</span>
+                        <span class="vital-unit">%</span>
+                    </div>
+                    <div class="ecg-vital-item vital-temp">
+                        <span class="vital-label">Temp</span>
+                        <span class="vital-value" id="overlay-temp">--</span>
+                        <span class="vital-unit">°C</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Alert Timeline ── -->
+        <div class="card alert-card">
+            <div class="card-title"><span class="icon">🔔</span> Alert Timeline</div>
+            <div class="alert-list" id="alert-list">
+                <div class="alert-item info" style="opacity:0.5">
+                    <span class="alert-icon">⏳</span>
+                    <div class="alert-content">
+                        <div class="alert-message">Waiting for data...</div>
+                        <div class="alert-time">System starting</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Patient Cards ── -->
+        <div class="card patients-grid-card">
+            <div class="card-title"><span class="icon">👤</span> Monitored Patients</div>
+            <div class="patients-grid" id="patients-grid"></div>
+        </div>
+
+        <!-- ── Environment Row ── -->
+        <div class="env-row">
+            <!-- Air Quality -->
+            <div class="card">
+                <div class="card-title"><span class="icon">🌬️</span> Air Quality (MQ-135)</div>
+                <div class="gauge-wrap">
+                    <svg class="gauge-svg" viewBox="0 0 130 75">
+                        <path d="M 10 70 A 55 55 0 0 1 120 70" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="10" stroke-linecap="round" />
+                        <path id="aqi-arc" d="M 10 70 A 55 55 0 0 1 120 70" fill="none" stroke="#10b981" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 300" />
+                    </svg>
+                    <div class="gauge-value-text" id="aqi-value">--</div>
+                    <div class="gauge-label" id="aqi-label">PPM</div>
+                </div>
+            </div>
+
+            <!-- Flame Sensor -->
+            <div class="card">
+                <div class="card-title"><span class="icon">🔥</span> Flame Sensor</div>
+                <div class="flame-status safe" id="flame-status">
+                    <span class="flame-icon">🛡️</span>
+                    <span>Environment Safe</span>
+                </div>
+            </div>
+
+            <!-- Pill Dispenser -->
+            <div class="card">
+                <div class="card-title"><span class="icon">💊</span> Pill Dispenser</div>
+                <div class="pill-slots" id="pill-slots">
+                    <div class="pill-slot">
+                        <div class="pill-info">
+                            <div class="pill-icon slot1">💊</div>
+                            <div>
+                                <div class="pill-name">Morning Dose</div>
+                                <div class="pill-time">09:00 AM</div>
+                            </div>
+                        </div>
+                        <span class="pill-status pending" id="pill-status-1">Pending</span>
+                        <button class="pill-dispense-btn" onclick="dispenseSlot(1)">Dispense</button>
+                    </div>
+                    <div class="pill-slot">
+                        <div class="pill-info">
+                            <div class="pill-icon slot2">💊</div>
+                            <div>
+                                <div class="pill-name">Afternoon Dose</div>
+                                <div class="pill-time">01:00 PM</div>
+                            </div>
+                        </div>
+                        <span class="pill-status pending" id="pill-status-2">Pending</span>
+                        <button class="pill-dispense-btn" onclick="dispenseSlot(2)">Dispense</button>
+                    </div>
+                    <div class="pill-slot">
+                        <div class="pill-info">
+                            <div class="pill-icon slot3">💊</div>
+                            <div>
+                                <div class="pill-name">Evening Dose</div>
+                                <div class="pill-time">08:00 PM</div>
+                            </div>
+                        </div>
+                        <span class="pill-status pending" id="pill-status-3">Pending</span>
+                        <button class="pill-dispense-btn" onclick="dispenseSlot(3)">Dispense</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Demo Controls ── -->
+        <div class="demo-bar">
+            <div class="demo-label">🧪 Demo Simulation Controls</div>
+            <div class="demo-buttons">
+                <button class="demo-btn" onclick="triggerSim('cardiac')">💔 Cardiac Event</button>
+                <button class="demo-btn danger" onclick="triggerSim('sos')">🚨 SOS</button>
+                <button class="demo-btn danger" onclick="triggerSim('fall')">⬇️ Fall</button>
+                <button class="demo-btn danger" onclick="triggerSim('flame')">🔥 Fire</button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
