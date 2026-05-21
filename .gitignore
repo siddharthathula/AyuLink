@@ -15,6 +15,7 @@ venv/
 out/
 build/
 dist/
+.vercel/
 
 # IDE
 .vscode/
@@ -30,8 +31,23 @@ Thumbs.db
 .pio/
 firmware/*/.pio/
 
+# Agent tools
+.agent/
+
 # Misc
 *.log
 scratch/
+submit.sh
 build_submission.sh
 AYULINK_FULL_CODEBASE.md
+AYULINK_PROJECT_HANDOFF.md
+AYULINK_SYSTEM_WORKFLOW.md
+AyuLink_submission.zip
+liveCAM/
+main_server/
+smart_pillDispenser/
+docs/
+dump_code.py
+generate_docs.py
+test_cam.py
+test_cv.py
