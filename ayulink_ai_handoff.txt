@@ -1,0 +1,81 @@
+# AyuLink AI Coding Agent Handoff Log
+**Date**: 2026-04-11
+**Purpose**: This document provides a complete, high-level architectural overview of the AyuLink Elder Care Remote Patient Monitoring and Smart Hub system. It is designed to be read by AI models (like Claude, Gemini, GPT-4) in new chat sessions to quickly understand the codebase state, technologies, and features without having to read the entire codebase and token history.
+
+---
+
+## 1. Project Overview
+AyuLink is an end-to-end IoT and AI-driven medical monitoring platform. It connects physical ESP32 medical wearables and smart pill dispensers to a centralized dashboard. An AI agent (powered by Llama 3.3 via Groq) triages incoming patient telemetry, predicts critical health events, handles mental health detection, and pushes multilingual alerts directly to users.
+
+### Tech Stack
+*   **Frontend**: Next.js 15 (App Router), React, Tailwind CSS, TypeScript.
+*   **Backend**: Python, FastAPI, SQLite (Local Data), WebSockets (Live Telemetry).
+*   **AI Agent**: Groq API (`llama-3.3-70b-versatile`), dynamically swapable keys at runtime.
+*   **Hardware Devices**:
+    *   **AyuLink Smart Hub (ESP32-S3)**: 4-slot servo pill dispenser, SSD1306 OLED, MQ-135 Air Quality Sensor, Flame Sensor, Buzzer alarm.
+    *   **AyuLink Wearable (ESP32 + LoRa)**: MAX30100 (HR/SpO2), MLX90614 (Temp), MPU6050 (Fall detection), Neo-6M GPS.
+    *   **ESP32-CAM (AI-Thinker)**: Streams live HTTP MJPEG video directly to the dashboard.
+
+---
+
+## 2. Directory Structure & Key Files
+```text
+/home/siddhartha/Desktop/Antigravity/hackathon/AyuLink/ElderCare
+├── backend/
+│   ├── main.py            # FastAPI entry point. Defines WebSockets and REST APIs.
+│   ├── ai_agent.py        # Groq Llama-3 prompt engineering, triage logic, and API key management.
+│   ├── database.py        # SQLite setup (ayulink.db), schemas for patients, vitals, alerts.
+│   ├── mock_stream.py     # Background simulator for mock telemetry when hardware is disconnected.
+├── frontend/
+│   ├── app/
+│   │   ├── agent/         # Primary AI Agent dashboard. Displays insights, chat, handles dynamic Groq keys.
+│   │   ├── dispensers/    # Smart Hub panel controlling Pill Slots, showing Flame/Air PPM, and ESP32-CAM feed.
+│   │   ├── family/        # Portal for family members to view vitals, weather, and live ESP32-CAM stream.
+│   │   ├── notifications/ # Multilingual push alerts (EN, HI, TE) sent directly to ESP32 OLED displays.
+│   │   ├── patients/      # Patient Registry CRUD backed by SQLite (migrated from Supabase).
+│   ├── components/        # Reusable React components (Modals, Charts, Indicators).
+├── firmware/              # C++ PlatformIO code for all ESP32/Arduino devices.
+```
+
+---
+
+## 3. Core Features & Implementation Details
+
+### A. The AI Agent (`backend/ai_agent.py` & `frontend/app/agent/page.tsx`)
+*   **Triage Engine**: Intercepts vitals (HR > 100, SpO2 < 90), Hub alerts (Flame=True), and automatically queries Groq to generate sub-second Medical Insights (Headline, Details, Actions).
+*   **Mental Health First-Aid**: Triggered via user chat keywords (e.g., "depressed", "suicide", "anxious", "lonely"). Bypasses standard triage to output empathetic text + National Helpline numbers.
+*   **API Key Hot-Swapping**: Due to token limits, users can input a new Groq API key directly in the Dashboard UI. It is passed via `POST /api/agent/apikey` and applied instantly.
+*   **Multilingual Support**: Chat operates seamlessly in English, Hindi, and Telugu.
+
+### B. Hardware Synchronization (`backend/main.py`)
+*   **WebSockets**: Real-time duplex comms.
+    *   `/ws/dashboard`: Frontend connects here. Dispatches commands `{"action": "dispense", "slot": 1}`.
+    *   `/ws/hub`: ESP32 physical hardware connects here to relay sensor data and listen.
+*   **REST API Fallbacks**: Components can trigger dispensations or OLED configurations via `POST /api/dispense/{slot}` or `POST /api/notifications`.
+
+### C. Persistent Storage (`backend/database.py`)
+*   Using pure local `SQLite`.
+*   Stores: `patients`, `vitals` history, `alerts`, `notifications`, `reports`.
+*   All frontend API calls (`GET /api/patients`) have been wired up to query SQLite directly instead of local browser storage. Location mock data default is specific to "Hanamkonda, Warangal".
+
+### D. Advanced Visual Features
+*   **ESP32-CAM integration**: Both `dispensers` and `family` portals allow users to enter an ESP32 stream URL (e.g., `http://10.121.171.20:81/stream`).
+    *   **Proxy Route**: To prevent browser cross-origin blocking (CORS/Mixed Content), the Next.js backend serves `/api/cam-proxy` which directly pipes the MJPEG stream to the `<img />` tags.
+    *   **Firmware**: The ESP32-CAM firmware utilizes `esp_http_server` (runs smoothly on a dedicated FreeRTOS task) and drops resolution to `QVGA` (320x240) to guarantee lag-free streaming even via the proxy.
+*   UI emphasizes modern glowing states, dark modes, animations, and severe color-coded alerts (Emerald/Amber/Red).
+
+---
+
+## 4. Known Issues & Recent Fixes
+*   **Groq API Rate Limits**: The primary `llama-3.3-70b-versatile` model has a strict 100,000 Token Per Day (TPD) limit on free tiers. The system defaults to **`llama-3.1-8b-instant`** in `.env` to bypass this quota limit while preserving high triage accuracy.
+*   **ESP32-CAM Brown-outs**: The camera firmware initializes `WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0)` early in the `setup()` function. This prevents boot-looping on clones when the camera activates.
+
+---
+
+## 5. How to Run Next Steps
+If continuing development, use this reference:
+1.  **Start Backend**: `cd backend && python3 main.py --mock` (runs on 127.0.0.1:8000)
+2.  **Start Frontend**: `cd frontend && npm run dev` (runs on 127.0.0.1:3000)
+3.  SQLite DB automatically creates and seeds records in `backend/ayulink.db`.
+
+This document completely covers the AyuLink Hackathon scope to bring models up to date immediately.

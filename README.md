@@ -161,13 +161,31 @@ Live vitals streaming from the wristband. Hardware network status. Smart pill di
 
 ## AI Agent — Groq LLaMA 3.1
 
-Not a chatbot. A clinical triage system.
+Not a chatbot. A full medical intelligence system. Three modes:
 
+### 1. AI Chat — Clinical Triage
 - **Triage Classification** — every vital reading gets classified: Normal, Warning, or Critical, with clinical reasoning
-- **Risk Scoring** — 0-100 score computed from heart rate, SpO2, temperature, blood pressure, and patient history
-- **Natural Language Queries** — doctors can ask "What's happening with Ramulu?" and get real clinical analysis
-- **Telugu Voice Alerts** — Telegram voice messages in Telugu so families actually understand what's happening
+- **Risk Scoring** — 0-100 score from heart rate, SpO2, temperature, BP, and patient history
+- **Natural Language** — doctors ask "What's happening with Ramulu?" and get real clinical analysis
 - **Trend Detection** — catches deteriorating patterns before they become emergencies
+
+### 2. Medical Knowledge Search — Drug & Disease Lookup
+
+![AI Agent medical search — searching Dolo 650 with full drug information](screenshots/ai_agent.png)
+
+Search any medicine, disease, or symptom and get instant AI-powered results:
+- **Drug Information** — generic name, drug class, brand names available in India
+- **Dosage Guides** — separate dosing for Adults, Elderly, and Children
+- **Side Effects** — common adverse reactions and contraindications
+- **Medical Uses** — what conditions the medicine treats
+- **Storage** — proper storage instructions
+
+Works for medicines (Dolo 650, Metformin, Amlodipine), diseases (Diabetes, Hypertension, Dengue), and symptoms (Chest pain, Fever). The search is designed for PHC doctors who need quick drug references without internet.
+
+### 3. Triage Insights — Automated Analysis
+- Real-time analysis of all patient vitals
+- Priority ranking of who needs attention first
+- Telugu voice alerts via Telegram so families understand what's happening
 
 ---
 
