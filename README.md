@@ -4,6 +4,8 @@
 
 **Team FightClub** | ScanSkip HackOS-ONE 2026
 
+🔗 **[Live Dashboard](https://ayulink-woad.vercel.app/)** · **[GitHub Repo](https://github.com/siddharthathula/AyuLink)**
+
 ---
 
 ## What is AyuLink?
