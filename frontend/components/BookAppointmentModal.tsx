@@ -33,6 +33,15 @@ export default function BookAppointmentModal({ isOpen, onClose, onSuccess, editD
     useEffect(() => {
         if (isOpen) {
             const fetchPatients = async () => {
+                try {
+                    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+                    const res = await fetch(`http://${host}:8000/api/patients`)
+                    const data = await res.json()
+                    if (data && data.ok && data.patients?.length > 0) {
+                        setPatients(data.patients)
+                        return
+                    }
+                } catch { /* fallback */ }
                 const { data } = await supabase.from('patients').select('id, name')
                 if (data) setPatients(data)
             }

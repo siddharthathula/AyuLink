@@ -6,9 +6,11 @@ import {
     Flame, Wind, Pill, HeartPulse, Thermometer, Droplets,
     ChevronRight, Cpu, Sparkles, User, Loader2,
     Send, MessageCircle, Trash2, Key, AlertCircle,
-    UserPlus, Ambulance, Search, FlaskConical
+    UserPlus, Ambulance, Search, FlaskConical,
+    FileText, Mic, MicOff, Volume2, RefreshCw, Printer, SendHorizontal
 } from 'lucide-react'
 import MedicalSearchPanel from '@/components/MedicalSearchPanel'
+import { useDemoMode } from '@/lib/demo-context'
 
 interface AgentInsight {
     patient_id: string; patient_name: string; severity: 'normal'|'warning'|'critical'|'emergency';
@@ -107,7 +109,7 @@ function LiveContextPanel({ vital, hub }: { vital: LiveVital | null, hub: HubDat
                 <div className="space-y-2">
                     <div className="flex items-center justify-between p-2.5 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
                         <div className="flex items-center gap-2">
-                            <Wind className={`h-4 w-4 ${hub.air_ppm > 300 ? 'text-red-400' : hub.air_ppm > 150 ? 'text-amber-400' : 'text-emerald-400'}`} />
+                            <Wind className={`h-4 w-4 ${hub.air_ppm > 500 ? 'text-red-400' : hub.air_ppm > 300 ? 'text-amber-400' : 'text-emerald-400'}`} />
                             <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Air Quality</span>
                         </div>
                         <span className="text-xs font-black" style={{ color: 'var(--text-primary)' }}>{hub.air_ppm} PPM · {hub.air_aqi}</span>
@@ -142,7 +144,8 @@ function LiveContextPanel({ vital, hub }: { vital: LiveVital | null, hub: HubDat
 }
 
 export default function AgentPage() {
-    const [activeTab, setActiveTab] = useState<'chat' | 'search' | 'insights'>('chat')
+    const { isDemoMode } = useDemoMode()
+    const [activeTab, setActiveTab] = useState<'chat' | 'search' | 'insights' | 'report'>('chat')
     const [insights, setInsights] = useState<AgentInsight[]>([])
     const [vital, setVital] = useState<LiveVital | null>(null)
     const [hub, setHub] = useState<HubData | null>(null)
@@ -160,9 +163,40 @@ export default function AgentPage() {
     const [showRegModal, setShowRegModal] = useState(false)
     const [regForm, setRegForm] = useState({ name: '', age: '', village: '', conditions: '' })
     const [regLoading, setRegLoading] = useState(false)
+    const [report, setReport] = useState<any>(null)
+    const [reportLoading, setReportLoading] = useState(false)
+    const [reportSent, setReportSent] = useState(false)
+    const [reportPatient, setReportPatient] = useState('108')
+    const [patientList, setPatientList] = useState<{ id: string; name: string }[]>([])
+    const [listening, setListening] = useState(false)
+    const [speaking, setSpeaking] = useState(false)
+    const [aiMode, setAiMode] = useState<'auto' | 'ollama' | 'groq'>('auto')
     const chatEndRef = useRef<HTMLDivElement | null>(null)
     const wsRef = useRef<WebSocket | null>(null)
     const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            fetch(`http://${window.location.hostname}:8000/api/agent/mode`)
+                .then(res => res.json())
+                .then(data => { if (data.ok && data.mode) setAiMode(data.mode) })
+                .catch(() => {})
+        }
+    }, [])
+
+    const handleSetMode = async (mode: 'auto' | 'ollama' | 'groq') => {
+        setAiMode(mode)
+        try {
+            const host = window.location.hostname
+            await fetch(`http://${host}:8000/api/agent/mode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            })
+        } catch (e) {
+            console.error('Failed to set AI mode:', e)
+        }
+    }
 
     // WS Connection
     const connect = useCallback(() => {
@@ -221,29 +255,185 @@ export default function AgentPage() {
     }
 
     const handleDemoEvent = async (event: string) => {
+        // Simulation events only allowed when Simulation Mode is ON
+        if (!isDemoMode) {
+            setAgentStatus('idle')
+            return
+        }
         setAgentStatus('thinking')
         try { await fetch(`/api/simulate/${event}?patient_id=P_01`, { method: 'POST' }) } catch { /* ok */ }
     }
 
-    const handleSendChat = async (overrideMsg?: string) => {
+    const handleSendChat = async (overrideMsg?: string): Promise<string | void> => {
         const userMsg = (overrideMsg ?? chatInput).trim()
         if (!userMsg || chatLoading) return
         setChatMessages(prev => [...prev, { role: 'user', text: userMsg }])
         setChatInput(''); setChatLoading(true)
+
+        // Streaming: hit the FastAPI backend directly (bypasses the buffering Next.js
+        // rewrite) so tokens appear as they are generated. Hostname keeps LAN devices working.
+        const backendBase = typeof window !== 'undefined'
+            ? `http://${window.location.hostname}:8000`
+            : '/api'
+        const url = `${backendBase}/api/agent/chat`
+
+        let full = '', doneEvent: any = null
+        setChatMessages(prev => [...prev, { role: 'ai', text: '…' }])
         try {
-            const res = await fetch('/api/agent/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: userMsg, language: chatLang }) })
-            const data = await res.json()
-            const reply = data.ok ? (data.reply || 'No response') : `Error: ${data.error || 'Failed'}`
-            const extra = data.is_distress ? `\n\n📞 Helplines: ${data.helplines}` : ''
-            setChatMessages(prev => [...prev, { role: 'ai', text: reply + extra }])
-            // Patient creation success
-            if (data.patient_created && data.patient_name) {
-                setPatientCreatedToast(`✅ Patient "${data.patient_name}" registered in database!`)
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userMsg, language: chatLang, stream: true }),
+            })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+            const contentType = res.headers.get('content-type') || ''
+            if (contentType.includes('application/json')) {
+                const data = await res.json()
+                const reply = data.reply || data.error || 'No response'
+                setChatMessages(prev => {
+                    const m = [...prev]
+                    m[m.length - 1] = { role: 'ai', text: reply }
+                    return m
+                })
+                return reply
+            }
+
+            if (!res.body) throw new Error('No body')
+            const reader = res.body.getReader()
+            const dec = new TextDecoder()
+            let buf = ''
+            for (;;) {
+                const { value, done } = await reader.read()
+                if (done) break
+                buf += dec.decode(value, { stream: true })
+                const lines = buf.split('\n')
+                buf = lines.pop() ?? ''
+                for (const line of lines) {
+                    const t = line.trim()
+                    if (!t.startsWith('data: ')) continue
+                    const payload = t.slice(6)
+                    if (payload === '[DONE]') continue
+                    try {
+                        const evt = JSON.parse(payload)
+                        if (evt.delta) {
+                            full += evt.delta
+                            setChatMessages(prev => {
+                                const m = [...prev]
+                                m[m.length - 1] = { role: 'ai', text: full }
+                                return m
+                            })
+                        }
+                        if (evt.done) doneEvent = evt
+                    } catch { /* partial json — ignore */ }
+                }
+            }
+            const reply = (full || (doneEvent && (doneEvent.delta || doneEvent.reply)) || '').trim() || 'No response'
+            if (doneEvent?.is_distress && doneEvent.helplines) {
+                const extra = `\n\n📞 Helplines: ${doneEvent.helplines}`
+                full += extra
+                setChatMessages(prev => {
+                    const m = [...prev]
+                    m[m.length - 1] = { role: 'ai', text: full }
+                    return m
+                })
+            }
+            if (doneEvent?.patient_created && doneEvent.patient_name) {
+                setPatientCreatedToast(`✅ Patient "${doneEvent.patient_name}" registered in database!`)
                 setTimeout(() => setPatientCreatedToast(null), 5000)
             }
-        } catch { setChatMessages(prev => [...prev, { role: 'ai', text: 'Connection error.' }]) }
-        finally { setChatLoading(false); setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100) }
+            return reply
+        } catch {
+            setChatMessages(prev => {
+                const m = [...prev]
+                m[m.length - 1] = { role: 'ai', text: 'Connection error.' }
+                return m
+            })
+        } finally { setChatLoading(false); setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100) }
     }
+
+    // ── Voice Nurse (mic → local AI → spoken reply) ──
+    const LANG_BCP: Record<string, string> = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' }
+    const recRef = useRef<any>(null)
+
+    const stopVoice = () => {
+        try { recRef.current?.stop() } catch { /* noop */ }
+        setListening(false)
+    }
+
+    const speak = (text: string) => {
+        if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) return
+        setSpeaking(true)
+        const u = new SpeechSynthesisUtterance(text.replace(/[*_#`]/g, ''))
+        u.lang = LANG_BCP[chatLang]
+        u.rate = 1; u.pitch = 1
+        const voices = window.speechSynthesis.getVoices()
+        const v = voices.find(v => v.lang.replace('_', '-') === LANG_BCP[chatLang])
+            || voices.find(v => v.lang.toLowerCase().startsWith(chatLang.split('-')[0]))
+        if (v) u.voice = v
+        u.onend = () => setSpeaking(false)
+        u.onerror = () => setSpeaking(false)
+        window.speechSynthesis.speak(u)
+    }
+
+    const startVoice = async () => {
+        if (listening) { stopVoice(); return }
+        const SR = typeof window !== 'undefined' && (window.SpeechRecognition || (window as any).webkitSpeechRecognition)
+        if (!SR) { alert('Voice not supported in this browser — try Chrome.'); return }
+        const rec = new SR()
+        recRef.current = rec
+        rec.lang = LANG_BCP[chatLang]
+        rec.interimResults = false
+        rec.maxAlternatives = 1
+        rec.onstart = () => setListening(true)
+        rec.onend = () => setListening(false)
+        rec.onerror = () => setListening(false)
+        rec.onresult = async (e: any) => {
+            const transcript = e.results?.[0]?.[0]?.transcript?.trim()
+            if (!transcript) return
+            setChatInput(transcript)
+            const reply = await handleSendChat(transcript)
+            if (reply) speak(reply)
+        }
+        rec.start()
+    }
+
+    // ── AI Health Report (local AI + local SQLite) ──
+    const loadReport = async () => {
+        setReportLoading(true); setReportSent(false)
+        try {
+            const res = await fetch(`/api/agent/report/${reportPatient}`)
+            const d = await res.json()
+            setReport(d.ok ? d.report : null)
+        } catch { setReport(null) }
+        finally { setReportLoading(false) }
+    }
+
+    const sendReport = async () => {
+        setReportLoading(true)
+        try {
+            const res = await fetch(`/api/agent/report/send/${reportPatient}`, { method: 'POST' })
+            const d = await res.json()
+            setReportSent(d.ok && d.sent)
+        } catch { setReportSent(false) }
+        finally { setReportLoading(false) }
+    }
+
+    useEffect(() => {
+        fetch('/api/patients').then(r => r.json()).then(d => {
+            if (d.ok) setPatientList((d.patients || []).map((p: any) => ({ id: p.id, name: p.name })))
+        }).catch(() => {})
+    }, [])
+
+    useEffect(() => {
+        if (activeTab === 'report' && !report) loadReport()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab])
+
+    useEffect(() => {
+        if (activeTab === 'report') loadReport()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reportPatient])
 
     const handleRegisterPatient = async () => {
         if (!regForm.name.trim()) return
@@ -272,6 +462,7 @@ export default function AgentPage() {
         { id: 'chat', label: 'AI Chat', icon: MessageCircle, color: 'text-purple-400' },
         { id: 'search', label: 'Medical Search', icon: Search, color: 'text-blue-400' },
         { id: 'insights', label: 'Triage Insights', icon: FlaskConical, color: 'text-emerald-400', badge: insights.length },
+        { id: 'report', label: 'Health Report', icon: FileText, color: 'text-cyan-400' },
     ] as const
 
     return (
@@ -293,14 +484,31 @@ export default function AgentPage() {
                                 {connected ? 'Live' : 'Offline'}
                             </span>
                         </div>
-                        <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Groq · Llama 3.1 · Triage · Medical Search · Mental Health</p>
+                        <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Local AI (offline) · Triage · Voice Nurse · Health Reports · EN/हिं/తె</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    {[{ label: '⚡ Cardiac', event: 'cardiac', color: 'text-red-400 border-red-500/30 hover:bg-red-500/10' },
-                      { label: '🆘 SOS', event: 'sos', color: 'text-amber-400 border-amber-500/30 hover:bg-amber-500/10' },
-                      { label: '🔥 Fire', event: 'flame', color: 'text-orange-400 border-orange-500/30 hover:bg-orange-500/10' },
-                      { label: '🫁 Fall', event: 'fall', color: 'text-pink-400 border-pink-500/30 hover:bg-pink-500/10' },
+                    {/* AI Provider Switcher */}
+                    <div className="flex items-center gap-1 p-1 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                        {[
+                            { id: 'auto', label: 'Auto' },
+                            { id: 'ollama', label: 'Local AI' },
+                            { id: 'groq', label: 'Groq 70B' }
+                        ].map(m => (
+                            <button
+                                key={m.id}
+                                onClick={() => handleSetMode(m.id as any)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all ${aiMode === m.id ? 'bg-purple-600 text-white shadow-sm' : 'text-purple-300 hover:bg-purple-500/20'}`}
+                            >
+                                {m.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {[{ label: 'Cardiac', event: 'cardiac', color: 'text-red-400 border-red-500/30 hover:bg-red-500/10' },
+                      { label: 'SOS', event: 'sos', color: 'text-amber-400 border-amber-500/30 hover:bg-amber-500/10' },
+                      { label: 'Fire', event: 'flame', color: 'text-orange-400 border-orange-500/30 hover:bg-orange-500/10' },
+                      { label: 'Fall', event: 'fall', color: 'text-pink-400 border-pink-500/30 hover:bg-pink-500/10' },
                     ].map(({ label, event, color }) => (
                         <button key={event} onClick={() => handleDemoEvent(event)}
                             className={`h-9 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wider transition-all ${color}`}
@@ -390,6 +598,156 @@ export default function AgentPage() {
                         <div className="space-y-4">{insights.map((ins, i) => <InsightCard key={`${ins.timestamp}-${i}`} insight={ins} isLatest={i === 0} />)}</div>
                     )}
                 </div>
+            )}
+
+            {/* Health Report Tab — local AI + local SQLite, no new hardware */}
+            {activeTab === 'report' && (
+            <div className="space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-cyan-400" />
+                        <h2 className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>AI Health Report</h2>
+                        <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[11px] font-black">Doctor handoff</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <select value={reportPatient} onChange={e => setReportPatient(e.target.value)}
+                            className="h-9 px-3 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-cyan-500/30"
+                            style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}>
+                            {patientList.map(p => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
+                        </select>
+                        <button onClick={loadReport} disabled={reportLoading}
+                            className="h-9 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wider transition-all hover:bg-cyan-500/10 flex items-center gap-1.5 disabled:opacity-50"
+                            style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+                            <RefreshCw className={`h-3.5 w-3.5 ${reportLoading ? 'animate-spin' : ''}`} /> Generate
+                        </button>
+                        <button onClick={sendReport} disabled={reportLoading || !report}
+                            className="h-9 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-cyan-500/20 hover:scale-105 transition-all flex items-center gap-1.5 disabled:opacity-50">
+                            <SendHorizontal className="h-3.5 w-3.5" /> Send to Telegram
+                        </button>
+                        <button onClick={() => window.print()} disabled={!report}
+                            className="h-9 px-3 rounded-xl border text-[11px] font-black uppercase tracking-wider transition-all hover:bg-white/10 disabled:opacity-50"
+                            style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+                            <Printer className="h-3.5 w-3.5 inline mr-1" /> Print
+                        </button>
+                    </div>
+                </div>
+
+                {reportSent && (
+                    <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" /> Report sent to the family/doctor Telegram chat.
+                    </div>
+                )}
+
+                {reportLoading && !report ? (
+                    <div className="rounded-2xl border p-10 flex flex-col items-center gap-3" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+                        <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />
+                        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Local AI is analyzing vitals trends, prescriptions and alerts…</p>
+                    </div>
+                ) : report ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" id="health-report-print">
+                        <div className="lg:col-span-2 space-y-4">
+                            <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center text-white">
+                                            <User className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black" style={{ color: 'var(--text-primary)' }}>{report.patient}</h3>
+                                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Age {report.age} · {report.village} · {report.conditions}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border ${report.risk_score >= 70 ? 'text-red-400 border-red-500/40 bg-red-500/10' : report.risk_score >= 40 ? 'text-amber-400 border-amber-500/40 bg-amber-500/10' : 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'}`}>
+                                        Risk {report.risk_score}/100 · {report.risk_level}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { label: 'HR', value: report.stats?.match(/HR\s+([\d-]+)\s*bpm/)?.[1] || '—', icon: HeartPulse },
+                                        { label: 'SpO2', value: report.stats?.match(/SpO2\s+([\d-]+)%/)?.[1] || '—', icon: Droplets },
+                                        { label: 'Temp', value: report.stats?.match(/Temp\s+([\d.-]+)/)?.[1] || '—', icon: Thermometer },
+                                    ].map(s => {
+                                        const Icon = s.icon
+                                        return (
+                                            <div key={s.label} className="rounded-xl border p-3 text-center" style={{ borderColor: 'var(--border-color)' }}>
+                                                <Icon className={`h-4 w-4 mx-auto mb-1 ${s.label === 'SpO2' ? 'text-sky-400' : s.label === 'Temp' ? 'text-orange-400' : 'text-rose-400'}`} />
+                                                <p className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>{s.value}</p>
+                                                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+                                <h4 className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                    <Sparkles className="h-4 w-4 text-cyan-400" /> AI Summary
+                                </h4>
+                                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{report.ai_summary}</p>
+                            </div>
+
+                            <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+                                <h4 className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                    <AlertTriangle className="h-4 w-4 text-amber-400" /> Concerns
+                                </h4>
+                                {(report.ai_concerns || []).length > 0 ? (
+                                    <ul className="space-y-1.5">
+                                        {(report.ai_concerns as string[]).map((c, i) => (
+                                            <li key={i} className="text-sm flex gap-2" style={{ color: 'var(--text-primary)' }}>
+                                                <span className="text-amber-400">•</span> {c}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No concerns flagged.</p>
+                                )}
+                            </div>
+
+                            <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+                                <h4 className="text-sm font-black mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                    <Ambulance className="h-4 w-4 text-rose-400" /> Recommendation
+                                </h4>
+                                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{report.ai_recommendation}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="rounded-2xl border p-5" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+                                <h4 className="text-sm font-black mb-3" style={{ color: 'var(--text-primary)' }}>Raw Data (local SQLite)</h4>
+                                <div className="space-y-2 text-xs">
+                                    <div>
+                                        <p className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--text-muted)' }}>Vital ranges (last 200 readings)</p>
+                                        <p style={{ color: 'var(--text-primary)' }}>{report.stats}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--text-muted)' }}>Trend</p>
+                                        <p style={{ color: 'var(--text-primary)' }}>{report.trend}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--text-muted)' }}>Prescriptions</p>
+                                        <p style={{ color: 'var(--text-primary)' }}>{report.meds}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--text-muted)' }}>Recent alerts</p>
+                                        <p style={{ color: 'var(--text-primary)' }}>{report.alerts}</p>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--text-muted)' }}>Generated</p>
+                                        <p style={{ color: 'var(--text-primary)' }}>{new Date(report.generated_at * 1000).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border p-5 text-xs leading-relaxed" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+                                💡 <b>Demo tip:</b> hit <b>Send to Telegram</b> — the report goes straight to the family/doctor chat with vitals, AI summary and recommendations. 100% local AI + local SQLite, zero cloud.
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="rounded-2xl border p-10 text-center text-sm" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
+                        Could not generate the report. Is the backend running on :8000?
+                    </div>
+                )}
+            </div>
             )}
 
             {/* Chat Tab */}
@@ -499,6 +857,12 @@ export default function AgentPage() {
                             className="flex-1 px-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-purple-500/30 transition-all"
                             style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                             disabled={chatLoading} />
+                        <button onClick={startVoice}
+                            className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all border disabled:opacity-50 ${listening ? 'bg-red-500 text-white border-red-500 animate-pulse' : speaking ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'hover:bg-purple-500/10'}`}
+                            style={!listening && !speaking ? { borderColor: 'var(--border-color)', color: 'var(--text-muted)' } : {}}
+                            disabled={chatLoading} title={listening ? 'Listening… tap to stop' : speaking ? 'Speaking…' : 'Voice'}>
+                            {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                        </button>
                         <button onClick={() => handleSendChat()} disabled={chatLoading || !chatInput.trim()}
                             className="h-10 w-10 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 text-white flex items-center justify-center shadow-lg shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
                             <Send className="h-4 w-4" />

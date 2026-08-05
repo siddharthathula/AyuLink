@@ -106,7 +106,7 @@ unsigned long dispenseTimer = 0;
 // ================================================================
 const char *WIFI_SSID = "WiFi";       // <-- Your WiFi SSID
 const char *WIFI_PASS = "wordpass";   // <-- Your WiFi Password
-const char *WS_HOST = "10.73.201.237"; // <-- Laptop IP running backend
+const char *WS_HOST = "10.54.97.237"; // <-- Laptop IP running backend
 const uint16_t WS_PORT = 8000;
 const char *WS_PATH = "/ws/hub";
 

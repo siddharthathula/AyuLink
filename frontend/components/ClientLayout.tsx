@@ -5,11 +5,12 @@ import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import SettingsModal from '@/components/SettingsModal'
 import EmergencyMapModal from '@/components/EmergencyMapModal'
-import GatewayConnector from '@/components/GatewayConnector'
 import { ThemeProvider } from '@/lib/theme-context'
 import { DemoProvider } from '@/lib/demo-context'
 import DemoSimulator from '@/components/DemoSimulator'
+import BackendAlertWatcher from '@/components/BackendAlertWatcher'
 import ParamedicQRModal from '@/components/ParamedicQRModal'
+import { armAudioUnlock } from '@/lib/alert-sound'
 
 export default function ClientLayout({ children }: { children: ReactNode }) {
     const pathname = usePathname()
@@ -20,6 +21,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
     useEffect(() => {
         const handleOpenSettings = () => setSettingsOpen(true)
         window.addEventListener('openSettings', handleOpenSettings)
+        armAudioUnlock()
         return () => window.removeEventListener('openSettings', handleOpenSettings)
     }, [])
 
@@ -37,6 +39,15 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
         return () => window.removeEventListener('emergency-state', handleEmergency as EventListener)
     }, [])
 
+    const dismissEmergency = () => {
+        if (emergencyData?.alertId) {
+            try {
+                sessionStorage.setItem(`ayulink_dismissed_${emergencyData.alertId}`, '1')
+            } catch { }
+        }
+        setEmergencyData(null)
+    }
+
     // Landing page or Paramedic → full-screen, no sidebar, no padding
     if (isLandingPage || isParamedicPage) {
         return (
@@ -52,12 +63,13 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
         <DemoProvider>
             <ThemeProvider>
                 <DemoSimulator />
+                <BackendAlertWatcher />
 
                 {/* Global Emergency Banner */}
                 <div className={`fixed top-0 left-0 right-0 z-[60] bg-red-600 text-white px-4 py-2 flex items-center justify-center gap-3 transition-transform duration-300 ${emergencyData?.active ? 'translate-y-0' : '-translate-y-full'}`}>
                     <span className="animate-pulse font-bold text-lg">🚨 CRITICAL EMERGENCY ACTIVE</span>
                     <button
-                        onClick={() => setEmergencyData(null)}
+                        onClick={dismissEmergency}
                         className="ml-4 text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
                     >
                         Dismiss
@@ -81,7 +93,7 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
 
                 <EmergencyMapModal
                     isOpen={!!emergencyData?.active}
-                    onClose={() => setEmergencyData(null)}
+                    onClose={dismissEmergency}
                     data={emergencyData ? {
                         patientName: emergencyData.patientName || 'Unknown',
                         lat: emergencyData.lat || 17.448,
@@ -94,7 +106,6 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                     } : null}
                 />
 
-                <GatewayConnector />
             </ThemeProvider>
         </DemoProvider>
     )

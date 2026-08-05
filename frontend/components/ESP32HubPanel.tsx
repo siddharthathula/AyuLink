@@ -148,8 +148,21 @@ export default function ESP32HubPanel() {
             setCamUrl(`http://${window.location.hostname}:8000/api/stream`)
             setCamConnected(true)  // optimistic — onError will flip to false
         }
+
+        const handleCustomSlot = (e: CustomEvent) => {
+            const { slot, taken } = e.detail
+            if (slot && typeof taken === 'boolean') {
+                setHubState(prev => ({
+                    ...prev,
+                    slots: prev.slots.map(s => s.slot === slot ? { ...s, taken } : s)
+                }))
+            }
+        }
+        window.addEventListener('hub-slot-update', handleCustomSlot as EventListener)
+
         return () => {
             wsRef.current?.close()
+            window.removeEventListener('hub-slot-update', handleCustomSlot as EventListener)
             if (retryRef.current) clearTimeout(retryRef.current)
         }
     }, [connect])
@@ -163,6 +176,7 @@ export default function ESP32HubPanel() {
         }
         setDispensing(slot)
         showToast(`Dispensing Slot ${slot} (${SLOT_DEFAULTS[slot - 1].label})...`, 'info')
+        window.dispatchEvent(new CustomEvent('hub-slot-update', { detail: { slot, taken: true } }))
         try {
             const res = await fetch(`/api/dispense/${slot}`, { method: 'POST' }).catch(() => null)
             if (res?.ok) {
@@ -203,6 +217,7 @@ export default function ESP32HubPanel() {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
                 wsRef.current.send(JSON.stringify({ action: 'dispense', slot, reset: true }))
             }
+            window.dispatchEvent(new CustomEvent('hub-slot-update', { detail: { slot, taken: false } }))
             setHubState(prev => ({
                 ...prev,
                 slots: prev.slots.map(s => s.slot === slot ? { ...s, taken: false } : s)
@@ -212,6 +227,9 @@ export default function ESP32HubPanel() {
     }
 
     const handleResetAll = () => {
+        [1, 2, 3, 4].forEach(slot => {
+            window.dispatchEvent(new CustomEvent('hub-slot-update', { detail: { slot, taken: false } }))
+        })
         setHubState(prev => ({
             ...prev,
             slots: prev.slots.map(s => ({ ...s, taken: false }))
@@ -371,13 +389,13 @@ export default function ESP32HubPanel() {
             </div>
 
             <div className="px-5 pb-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-                <div className={`rounded-xl p-3 border ${envData.air_ppm > 300 ? 'border-red-500/40 bg-red-500/10' : envData.air_ppm > 150 ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/30 bg-emerald-500/10'}`}>
+                <div className={`rounded-xl p-3 border ${envData.air_ppm > 500 ? 'border-red-500/40 bg-red-500/10' : envData.air_ppm > 300 ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/30 bg-emerald-500/10'}`}>
                     <div className="flex items-center gap-2 mb-1">
-                        <Wind className={`h-4 w-4 ${envData.air_ppm > 300 ? 'text-red-400' : envData.air_ppm > 150 ? 'text-amber-400' : 'text-emerald-400'}`} />
+                        <Wind className={`h-4 w-4 ${envData.air_ppm > 500 ? 'text-red-400' : envData.air_ppm > 300 ? 'text-amber-400' : 'text-emerald-400'}`} />
                         <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Air Quality (MQ-135)</span>
                     </div>
                     <p className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>{envData.air_ppm} PPM</p>
-                    <p className={`text-[10px] font-bold ${envData.air_ppm > 300 ? 'text-red-400' : envData.air_ppm > 150 ? 'text-amber-400' : 'text-emerald-400'}`}>{envData.air_aqi}</p>
+                    <p className={`text-[10px] font-bold ${envData.air_ppm > 500 ? 'text-red-400' : envData.air_ppm > 300 ? 'text-amber-400' : 'text-emerald-400'}`}>{envData.air_aqi}</p>
                 </div>
                 <div className={`rounded-xl p-3 border ${envData.flame ? 'border-red-500/60 bg-red-500/20 animate-pulse' : 'border-emerald-500/30 bg-emerald-500/10'}`}>
                     <div className="flex items-center gap-2 mb-1">
@@ -433,7 +451,7 @@ export default function ESP32HubPanel() {
 
             {/* ── Camera Feed — always show container ── */}
             <div className="p-3 flex justify-center">
-                <div className="relative rounded-xl overflow-hidden bg-black flex items-center justify-center" style={{ height: 240, width: 320, border: '1px solid var(--border-color)' }}>
+                <div className="relative rounded-xl overflow-hidden bg-black flex items-center justify-center w-full max-w-[320px] aspect-video" style={{ border: '1px solid var(--border-color)' }}>
                     {camUrl && (
                         <img 
                             key={camUrl}

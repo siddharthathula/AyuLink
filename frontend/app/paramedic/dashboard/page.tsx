@@ -127,16 +127,23 @@ export default function ParamedicDashboard() {
             ws = new WebSocket(`${proto}//${window.location.hostname}:8000/ws/dashboard`)
             ws.onmessage = (event) => {
                 try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'sos' || data.type === 'fall') {
+                    const raw = JSON.parse(event.data);
+                    const eventType = raw.event;
+                    const data = raw.data || raw;
+
+                    const isEmergencyAlert = eventType === 'alert' && (data.severity === 'emergency' || data.alert_type === 'sos' || data.alert_type === 'fall');
+                    const isDispatch = eventType === 'dispatch';
+                    const isDirectAlert = data.type === 'sos' || data.type === 'fall';
+
+                    if (isDispatch || isEmergencyAlert || isDirectAlert) {
                         // Transform the dashboard alert into dispatch format
                         const dispatchPayload = {
-                            patientName: data.patient_name || data.patient_id || 'Unknown',
-                            lat: 17.50 + (Math.random() * 0.05), // Mock locations since no real GPS yet
-                            lng: 78.55 + (Math.random() * 0.05),
-                            hr: data.vitals?.hr || 110,
-                            spo2: data.vitals?.spo2 || 88,
-                            temp: data.vitals?.temp || 37.0
+                            patientName: data.patient_name || data.patientName || data.patient_id || 'Unknown',
+                            lat: data.lat || (17.50 + (Math.random() * 0.05)), // Mock locations since no real GPS yet
+                            lng: data.lng || (78.55 + (Math.random() * 0.05)),
+                            hr: data.vitals_snapshot?.hr || data.vitals?.hr || data.hr || 110,
+                            spo2: data.vitals_snapshot?.spo2 || data.vitals?.spo2 || data.spo2 || 88,
+                            temp: data.vitals_snapshot?.temp || data.vitals?.temp || data.temp || 37.0
                         }
                         handleDispatch(dispatchPayload)
                         triggerAlerts(dispatchPayload.patientName)

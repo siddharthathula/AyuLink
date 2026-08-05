@@ -70,10 +70,6 @@ const DASHBOARD_WS_URL =
 
 const demoDispensers: Dispenser[] = [
     { id: 'MB-001', patient: 'Ramulu Goud',     location: 'Hanamkonda',      status: 'online',  battery: 100, lastSync: '2 min ago',  slots: 4, filled: 4, nextDose: '14:00', compliance: 95 },
-    { id: 'MB-002', patient: 'Laxmi Narsamma',  location: 'Kazipet',         status: 'online',  battery: 85,  lastSync: '5 min ago',  slots: 4, filled: 3, nextDose: '16:30', compliance: 88 },
-    { id: 'MB-003', patient: 'Srinivas Reddy',  location: 'Subedari',        status: 'offline', battery: 12,  lastSync: '2 hours ago', slots: 4, filled: 2, nextDose: '—',    compliance: 62 },
-    { id: 'MB-004', patient: 'Buchamma',         location: 'Warangal Fort',  status: 'online',  battery: 92,  lastSync: '1 min ago',  slots: 4, filled: 4, nextDose: '09:00', compliance: 100 },
-    { id: 'MB-005', patient: 'Venkat Rao',       location: 'Madikonda',      status: 'online',  battery: 78,  lastSync: '8 min ago',  slots: 4, filled: 2, nextDose: '20:00', compliance: 74 },
 ]
 
 // ─────────────────────────────────────────────────────────────
@@ -163,7 +159,7 @@ function ESP32HubPanel() {
         try {
             const wsUrl = typeof window !== 'undefined'
                 ? `ws://${window.location.hostname}:8000/ws/dashboard`
-                : 'ws://192.168.150.55:8000/ws/dashboard'
+                : 'ws://localhost:8000/ws/dashboard'
 
             const ws = new WebSocket(wsUrl)
 
@@ -462,9 +458,9 @@ function ESP32HubPanel() {
             {/* ── Environment Sensors ── */}
             <div className="px-5 pb-3 grid grid-cols-2 md:grid-cols-3 gap-3">
                 {/* MQ-135 Air Quality */}
-                <div className={`rounded-xl p-3 border ${envData.air_ppm > 300 ? 'border-red-500/40 bg-red-500/10' : envData.air_ppm > 150 ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/30 bg-emerald-500/10'}`}>
+                <div className={`rounded-xl p-3 border ${envData.air_ppm > 500 ? 'border-red-500/40 bg-red-500/10' : envData.air_ppm > 300 ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/30 bg-emerald-500/10'}`}>
                     <div className="flex items-center gap-2 mb-1">
-                        <Wind className={`h-4 w-4 ${envData.air_ppm > 300 ? 'text-red-400' : envData.air_ppm > 150 ? 'text-amber-400' : 'text-emerald-400'}`} />
+                        <Wind className={`h-4 w-4 ${envData.air_ppm > 500 ? 'text-red-400' : envData.air_ppm > 300 ? 'text-amber-400' : 'text-emerald-400'}`} />
                         <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Air Quality (MQ-135)</span>
                     </div>
                     <p className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>{envData.air_ppm} PPM</p>

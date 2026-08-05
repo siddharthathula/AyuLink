@@ -20,11 +20,8 @@ interface ASHAVisit {
 }
 
 const mockTodayVisits: ASHAVisit[] = [
-    { id: 'V-001', patientName: 'Ramulu Goud', patientId: 'P-001', village: 'Shadnagar', visitType: 'routine', scheduledTime: '09:00', actualTime: '09:15', status: 'completed', notes: 'BP refined, meds delivered', ashaWorker: 'Swarupa' },
-    { id: 'V-002', patientName: 'Buchamma', patientId: 'P-004', village: 'Chevella', visitType: 'emergency', scheduledTime: '10:30', actualTime: '10:25', status: 'completed', notes: 'Fall alert check, stable', ashaWorker: 'Kavitha' },
-    { id: 'V-003', patientName: 'Laxmi Narsamma', patientId: 'P-002', village: 'Maheshwaram', visitType: 'followup', scheduledTime: '11:00', status: 'pending', ashaWorker: 'Kavitha' },
-    { id: 'V-004', patientName: 'Venkat Rao', patientId: 'P-005', village: 'Ibrahimpatnam', visitType: 'emergency', scheduledTime: '08:00', status: 'missed', ashaWorker: 'Manjula' },
-    { id: 'V-005', patientName: 'Srinivas Reddy', patientId: 'P-003', village: 'Shamshabad', visitType: 'routine', scheduledTime: '14:00', status: 'pending', ashaWorker: 'Manjula' },
+    { id: 'V-001', patientName: 'Ramulu Goud', patientId: '108', village: 'Hanamkonda', visitType: 'routine', scheduledTime: '09:00', actualTime: '09:15', status: 'completed', notes: 'BP refined, meds delivered', ashaWorker: 'Swarupa' },
+    { id: 'V-002', patientName: 'Ramulu Goud', patientId: '108', village: 'Hanamkonda', visitType: 'followup', scheduledTime: '11:00', status: 'pending', ashaWorker: 'Kavitha' },
 ]
 
 const ashaWorkers = [

@@ -42,7 +42,7 @@
 // ── Config ────────────────────────────────────────────────────────
 const char* WIFI_SSID = "WiFi";
 const char* WIFI_PASS = "wordpass";
-const char* WS_HOST   = "10.73.201.237";
+const char* WS_HOST   = "10.54.97.237";
 const uint16_t WS_PORT = 8000;
 const char* WS_PATH   = "/ws/gateway";
 
@@ -327,7 +327,7 @@ void setup() {
     ws.begin(WS_HOST, WS_PORT, WS_PATH);
     ws.onEvent(wsEvent);
     ws.setReconnectInterval(5000);
-    ws.enableHeartbeat(15000, 3000, 2);  // ping every 15s, pong timeout 3s, 2 retries
+    ws.enableHeartbeat(30000, 10000, 3);  // ping every 15s, pong timeout 3s, 2 retries
     // This stops the backend from closing the idle connection every ~60s
 
     beep(2, 80);

@@ -7,10 +7,8 @@ import { useDemoMode } from '@/lib/demo-context'
 import BookAppointmentModal from '@/components/BookAppointmentModal'
 
 const mockAppointments = [
-    { id: 'A-001', patient: 'Ramulu Goud', patient_id: 'P-001', doctor_name: 'Dr. Sharma', time: '09:00', date: 'Today', type: 'Check-up', status: 'confirmed', location: 'PHC', raw_date: new Date() },
-    { id: 'A-002', patient: 'Laxmi Narsamma', patient_id: 'P-002', doctor_name: 'Dr. Rao', time: '10:30', date: 'Today', type: 'Follow-up', status: 'pending', location: 'Home Visit', raw_date: new Date() },
-    { id: 'A-003', patient: 'Srinivas Reddy', patient_id: 'P-003', doctor_name: 'Dr. Sharma', time: '11:00', date: 'Tomorrow', type: 'Emergency', status: 'confirmed', location: 'District Hospital', raw_date: new Date(new Date().setDate(new Date().getDate() + 1)) },
-    { id: 'A-004', patient: 'Buchamma', patient_id: 'P-004', doctor_name: 'Dr. Reddy', time: '09:30', date: 'Tomorrow', type: 'Check-up', status: 'pending', location: 'PHC', raw_date: new Date(new Date().setDate(new Date().getDate() + 1)) },
+    { id: 'A-001', patient: 'Ramulu Goud', patient_id: 'P-108', doctor_name: 'Dr. Sharma', time: '09:00', date: 'Today', type: 'Check-up', status: 'confirmed', location: 'PHC', raw_date: new Date() },
+    { id: 'A-002', patient: 'Ramulu Goud', patient_id: 'P-108', doctor_name: 'Dr. Rao', time: '10:30', date: 'Today', type: 'Follow-up', status: 'pending', location: 'Home Visit', raw_date: new Date() },
 ]
 
 const statusColors = {

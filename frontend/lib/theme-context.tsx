@@ -30,7 +30,7 @@ const translations: Record<Language, Record<string, string>> = {
         reports: 'Health Intelligence',
 
         // Dashboard Headers
-        primaryHealthCenter: 'Kakatiya Rural Health Center',
+        primaryHealthCenter: 'AyuLink PHC',
         commandCenter: 'Command Center',
         recordVitals: 'Record Vitals',
         systemOnline: 'System Online',
@@ -129,8 +129,8 @@ const translations: Record<Language, Record<string, string>> = {
         autoRefresh: 'Auto Refresh',
         autoRefreshDesc: 'Update vitals every 5 seconds',
         demoCenter: 'Demo Center (Developer)',
-        simulationMode: 'Simulation Mode',
-        simulationDesc: 'Generate random vitals data',
+        simulationMode: 'Demo data',
+        simulationDesc: 'Show generated patient readings when hardware is unavailable',
         startJuryDemo: 'Start Jury Demo',
         manualSOS: 'Manual SOS',
         done: 'Done',
@@ -313,7 +313,7 @@ const translations: Record<Language, Record<string, string>> = {
         prescriptions: 'नुस्खे',
         reports: 'रिपोर्ट',
         emergency: 'आपातकालीन',
-        primaryHealthCenter: 'काकतीय ग्रामीण स्वास्थ्य केंद्र',
+        primaryHealthCenter: 'आयुलिंक पीएचसी (AyuLink PHC)',
         commandCenter: 'कमांड सेंटर',
         recordVitals: 'विटल्स रिकॉर्ड करें',
         systemOnline: 'सिस्टम ऑनलाइन',
@@ -371,9 +371,6 @@ const translations: Record<Language, Record<string, string>> = {
         sosAlert: 'SOS चेतावनी',
         highHeartRate: 'उच्च हृदय गति',
         lowOxygen: 'कम ऑक्सीजन',
-
-        patients: 'मरीज',
-        // ... (existing translations)
 
         // Devices Page
         loraMesh: 'लोरा मेश नेटवर्क',
@@ -574,7 +571,7 @@ const translations: Record<Language, Record<string, string>> = {
         prescriptions: 'మందుల చీటీలు',
         reports: 'నివేదికలు',
         emergency: 'అత్యవసర',
-        primaryHealthCenter: 'కాకతీయ గ్రామీణ ఆరోగ్య కేంద్రం',
+        primaryHealthCenter: 'ఆయులింక్ PHC (AyuLink PHC)',
         commandCenter: 'కమాండ్ సెంటర్',
         recordVitals: 'వైటల్స్ రికార్డ్ చేయండి',
         systemOnline: 'సిస్టమ్ ఆన్‌లైన్',
@@ -632,9 +629,6 @@ const translations: Record<Language, Record<string, string>> = {
         sosAlert: 'SOS అలర్ట్',
         highHeartRate: 'అధిక హృదయ స్పందన',
         lowOxygen: 'తక్కువ ఆక్సిజన్',
-
-        patients: 'రోగులు',
-        // ... (existing translations)
 
         // Devices Page
         loraMesh: 'లోరా మెష్ నెట్‌వర్క్',
@@ -835,19 +829,28 @@ const defaultContextValue: ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType>(defaultContextValue)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setThemeState] = useState<Theme>('light')
-    const [language, setLanguageState] = useState<Language>('en')
-    const [gatewayIP, setGatewayIPState] = useState<string>('192.168.4.1')
+    const [theme, setThemeState] = useState<Theme>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('eldercareTheme') as Theme) || 'light'
+        }
+        return 'light'
+    })
+    const [language, setLanguageState] = useState<Language>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('eldercareLanguage') as Language) || 'en'
+        }
+        return 'en'
+    })
+    const [gatewayIP, setGatewayIPState] = useState<string>(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('gatewayIP') || window.location.hostname || '192.168.4.1'
+        }
+        return '192.168.4.1'
+    })
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
         setMounted(true)
-        const savedTheme = localStorage.getItem('eldercareTheme') as Theme
-        const savedLanguage = localStorage.getItem('eldercareLanguage') as Language
-        const savedIP = localStorage.getItem('gatewayIP')
-        if (savedTheme) setThemeState(savedTheme)
-        if (savedLanguage) setLanguageState(savedLanguage)
-        if (savedIP) setGatewayIPState(savedIP)
     }, [])
 
     useEffect(() => {

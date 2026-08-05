@@ -18,9 +18,8 @@ interface ASHAVisit {
 
 // Initial Mock Tasks for Swarupa
 const initialTasks: ASHAVisit[] = [
-    { id: 'V-001', patientName: 'Ramulu Goud', patientId: 'P-001', village: 'Hanamkonda', visitType: 'routine', scheduledTime: '09:00', status: 'pending' },
-    { id: 'V-002', patientName: 'Buchamma', patientId: 'P-004', village: 'Warangal Fort', visitType: 'followup', scheduledTime: '10:30', status: 'pending' },
-    { id: 'V-003', patientName: 'Laxmi Narsamma', patientId: 'P-002', village: 'Kazipet', visitType: 'routine', scheduledTime: '14:00', status: 'pending' },
+    { id: 'V-001', patientName: 'Ramulu Goud', patientId: '108', village: 'Hanamkonda', visitType: 'routine', scheduledTime: '09:00', status: 'pending' },
+    { id: 'V-002', patientName: 'Ramulu Goud', patientId: '108', village: 'Hanamkonda', visitType: 'followup', scheduledTime: '14:00', status: 'pending' },
 ]
 
 export default function ASHAPortal() {

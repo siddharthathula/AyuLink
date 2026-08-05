@@ -59,7 +59,7 @@ export default function VillageMap() {
             </div>
 
             <div className="p-4 space-y-2">
-                {villages.map((village, idx) => (
+                {villages.map((village: any, idx: number) => (
                     <div
                         key={idx}
                         onClick={() => handleVillageClick(village)}

@@ -16,9 +16,6 @@ const nextConfig: NextConfig = {
     "192.168.*.*:3000",
     "192.168.*.*:3001",
   ],
-  turbopack: {
-    root: "/home/siddhartha/Desktop/AyuLink/ElderCare/frontend",
-  },
   async rewrites() {
     return [
       {

@@ -1,9 +1,3 @@
-/* Google Fonts Import - Must be FIRST */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-/* Leaflet CSS for Maps */
-@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -913,39 +907,6 @@ input::placeholder {
     gap: 10px !important;
   }
 
-  /* Smaller padding */
-  .p-6 {
-    padding: 16px !important;
-  }
-
-  .p-5 {
-    padding: 14px !important;
-  }
-
-  .p-4 {
-    padding: 12px !important;
-  }
-
-  /* Font sizes for mobile */
-  h1,
-  .text-3xl {
-    font-size: 1.5rem !important;
-  }
-
-  h2,
-  .text-2xl {
-    font-size: 1.25rem !important;
-  }
-
-  h3,
-  .text-xl {
-    font-size: 1.1rem !important;
-  }
-
-  .text-lg {
-    font-size: 1rem !important;
-  }
-
   /* Stats cards more compact */
   .stat-card {
     padding: 12px !important;
@@ -1052,27 +1013,6 @@ input::placeholder {
     height: 18px !important;
   }
 
-  /* Smaller fonts */
-  h1,
-  .text-3xl {
-    font-size: 1.25rem !important;
-  }
-
-  .text-sm {
-    font-size: 12px !important;
-  }
-
-  .text-xs {
-    font-size: 10px !important;
-  }
-
-  /* Less padding */
-  .p-6,
-  .p-5,
-  .p-4 {
-    padding: 10px !important;
-  }
-
   /* Vitals cards */
   .vital-card {
     padding: 10px !important;
@@ -1167,5 +1107,22 @@ input::placeholder {
 
   100% {
     transform: translateX(100%) skewX(-15deg);
+  }
+}
+
+/* Mobile Optimization Utilities */
+@media (max-width: 640px) {
+  html, body {
+    overflow-x: hidden;
+  }
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .mobile-card-padding {
+    padding: 0.75rem !important;
+  }
+  .mobile-touch-scroll {
+    -webkit-overflow-scrolling: touch;
   }
 }

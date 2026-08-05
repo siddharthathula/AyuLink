@@ -46,29 +46,7 @@ class MockPatientProfile:
         """Generate one realistic vital reading."""
         now = time.time()
 
-        # Random events
-        roll = random.random()
-
-        # 0.5% chance of SOS
-        if roll < 0.005 and not self.sos and not self.cardiac_event:
-            self.sos = True
-            self.event_duration = random.randint(5, 15)
-
-        # 1% chance of cardiac event
-        elif roll < 0.015 and not self.cardiac_event and not self.sos:
-            self.cardiac_event = True
-            self.event_duration = random.randint(8, 20)
-
-        # 0.3% chance of fall
-        elif roll < 0.018 and not self.fall:
-            self.fall = True
-            self.event_duration = random.randint(3, 8)
-
-        # 2% chance of removing device
-        elif roll < 0.038:
-            self.worn = not self.worn
-
-        # Decay events
+        # Decay manual events
         if self.event_duration > 0:
             self.event_duration -= 1
         else:
@@ -80,22 +58,25 @@ class MockPatientProfile:
         if not self.worn:
             hr, spo2, temp = 0, 0, 0.0
         elif self.sos:
-            hr = random.randint(0, 10)
-            spo2 = random.randint(0, 10)
-            temp = 0.0
-        elif self.cardiac_event:
-            hr = random.randint(130, 160)
-            spo2 = random.randint(78, 88)
-            temp = round(self.base_temp + random.uniform(0.5, 2.0), 1)
-        elif self.fall:
+            # SOS: patient in distress — elevated HR, lowered SpO2, but alive
             hr = random.randint(100, 130)
-            spo2 = random.randint(88, 94)
+            spo2 = random.randint(85, 93)
+            temp = round(self.base_temp + random.uniform(0.2, 1.0), 1)
+        elif self.cardiac_event:
+            # Cardiac: tachycardia with moderate hypoxia
+            hr = random.randint(120, 155)
+            spo2 = random.randint(82, 91)
+            temp = round(self.base_temp + random.uniform(0.5, 1.5), 1)
+        elif self.fall:
+            # Fall: slightly elevated HR from shock, mild SpO2 drop
+            hr = random.randint(90, 120)
+            spo2 = random.randint(90, 96)
             temp = round(self.base_temp + random.uniform(0, 0.5), 1)
         else:
             # Normal with natural variation
             variation = math.sin(now * 0.01) * 3
             hr = int(self.base_hr + variation + random.randint(-3, 3))
-            spo2 = min(100, max(90, self.base_spo2 + random.randint(-1, 2)))
+            spo2 = min(100, max(93, self.base_spo2 + random.randint(-1, 2)))
             temp = round(self.base_temp + random.uniform(-0.2, 0.3), 1)
 
         # GPS drift
@@ -193,9 +174,15 @@ class MockDataStream:
         self,
         on_vital: Callable[[VitalReading], Awaitable[None]],
         on_hub: Callable[[HubReading], Awaitable[None]],
+        enabled_check: Callable[[], bool] = lambda: True,
     ):
         """Continuously generate mock data and call handlers."""
         while True:
+            # Paused while simulation is OFF (Settings → Simulation Mode) or a real
+            # Gateway is connected — no mock data emitted, task stays alive.
+            if not enabled_check():
+                await asyncio.sleep(1)
+                continue
             # Generate vitals for each patient (staggered)
             for pid, profile in self.patients.items():
                 reading = profile.generate_reading()

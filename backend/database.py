@@ -90,6 +90,29 @@ def init_db():
             sent_to_device INTEGER DEFAULT 0,
             created_at REAL
         );
+
+        CREATE TABLE IF NOT EXISTS medications (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT NOT NULL,
+            medicine_name TEXT,
+            dosage TEXT,
+            schedule_time TEXT DEFAULT '08:00',
+            slot INTEGER DEFAULT 1,
+            status TEXT DEFAULT 'pending',
+            created_at REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS appointments (
+            id TEXT PRIMARY KEY,
+            patient_id TEXT,
+            patient_name TEXT,
+            doctor TEXT,
+            date TEXT,
+            time TEXT,
+            reason TEXT,
+            status TEXT DEFAULT 'scheduled',
+            created_at REAL
+        );
         """)
     print(f"[DB] ✓ SQLite initialized at {DB_PATH}")
 
@@ -119,14 +142,26 @@ def create_patient(data: dict) -> dict:
     return get_patient(pid)
 
 
+def _safe_json_list(val) -> list:
+    if isinstance(val, list):
+        return val
+    if not val:
+        return []
+    try:
+        res = json.loads(val)
+        return res if isinstance(res, list) else []
+    except Exception:
+        return []
+
+
 def get_patient(pid: str) -> dict | None:
     with get_db() as db:
         row = db.execute("SELECT * FROM patients WHERE id=?", (pid,)).fetchone()
         if not row:
             return None
         d = dict(row)
-        d["conditions"] = json.loads(d.get("conditions") or "[]")
-        d["allergies"] = json.loads(d.get("allergies") or "[]")
+        d["conditions"] = _safe_json_list(d.get("conditions"))
+        d["allergies"] = _safe_json_list(d.get("allergies"))
         return d
 
 
@@ -136,8 +171,8 @@ def get_all_patients() -> list[dict]:
         result = []
         for row in rows:
             d = dict(row)
-            d["conditions"] = json.loads(d.get("conditions") or "[]")
-            d["allergies"] = json.loads(d.get("allergies") or "[]")
+            d["conditions"] = _safe_json_list(d.get("conditions"))
+            d["allergies"] = _safe_json_list(d.get("allergies"))
             result.append(d)
         return result
 
@@ -151,6 +186,29 @@ def delete_patient(pid: str) -> bool:
 def get_patient_count() -> int:
     with get_db() as db:
         return db.execute("SELECT COUNT(*) FROM patients").fetchone()[0]
+
+
+def get_all_patients_summary() -> str:
+    """Detailed multi-patient summary with medications, conditions, emergency contacts, and vital history."""
+    patients = get_all_patients()
+    if not patients:
+        return "No patients registered in database."
+    lines = [f"Total Database Patients: {len(patients)}"]
+    for p in patients:
+        pid = p["id"]
+        meds = get_all_medications(pid)
+        med_str = "; ".join([f"{m['medicine_name']} {m['dosage']} @{m['schedule_time']} ({m['status']})" for m in meds]) or "None"
+        vitals = get_vitals_history(pid, limit=3)
+        vit_str = "; ".join([f"HR:{v['hr']} SpO2:{v['spo2']}% T:{v['temp']}°C" for v in vitals]) or "No recent vitals"
+        conds = ", ".join(p.get("conditions", [])) or "None"
+        allergies = ", ".join(p.get("allergies", [])) or "None"
+        lines.append(
+            f"- {p['name']} (ID: {pid}, Age: {p.get('age',0)}, Village: {p.get('village','')}, "
+            f"Blood: {p.get('blood_group','N/A')}, Phone: {p.get('phone','N/A')}, Emergency Contact: {p.get('emergency_contact','N/A')}, "
+            f"Conditions: {conds}, Allergies: {allergies}, Language: {p.get('language','Telugu')}). "
+            f"Prescriptions: [{med_str}]. Recent Vitals: [{vit_str}]."
+        )
+    return "\n".join(lines)
 
 
 # ── Vitals History ──
@@ -198,6 +256,67 @@ def get_patient_reports(patient_id: str) -> list[dict]:
 def delete_report(report_id: str) -> bool:
     with get_db() as db:
         db.execute("DELETE FROM reports WHERE id=?", (report_id,))
+        return True
+
+
+# ── Medications (Prescriptions) ──
+
+def get_all_medications(patient_id: str | None = None) -> list[dict]:
+    with get_db() as db:
+        if patient_id:
+            rows = db.execute(
+                "SELECT * FROM medications WHERE patient_id=? ORDER BY slot", (patient_id,)
+            ).fetchall()
+        else:
+            rows = db.execute("SELECT * FROM medications ORDER BY slot").fetchall()
+        return [dict(r) for r in rows]
+
+
+def create_medication(data: dict) -> dict:
+    mid = data.get("id", f"M-{uuid.uuid4().hex[:6].upper()}")
+    now = time.time()
+    with get_db() as db:
+        db.execute("""
+            INSERT OR REPLACE INTO medications
+            (id, patient_id, medicine_name, dosage, schedule_time, slot, status, created_at)
+            VALUES (?,?,?,?,?,?,?,?)
+        """, (
+            mid, data.get("patient_id", ""), data.get("medicine_name", ""),
+            data.get("dosage", ""), data.get("schedule_time", "08:00"),
+            int(data.get("slot", 1) or 1), data.get("status", "pending"), now,
+        ))
+    return get_medication(mid)
+
+
+def get_medication(med_id: str) -> dict | None:
+    with get_db() as db:
+        row = db.execute("SELECT * FROM medications WHERE id=?", (med_id,)).fetchone()
+        return dict(row) if row else None
+
+
+def update_medication(med_id: str, data: dict) -> dict | None:
+    existing = get_medication(med_id)
+    if not existing:
+        return None
+    with get_db() as db:
+        db.execute("""
+            UPDATE medications SET patient_id=?, medicine_name=?, dosage=?,
+            schedule_time=?, slot=?, status=? WHERE id=?
+        """, (
+            data.get("patient_id", existing["patient_id"]),
+            data.get("medicine_name", existing["medicine_name"]),
+            data.get("dosage", existing["dosage"]),
+            data.get("schedule_time", existing["schedule_time"]),
+            int(data.get("slot", existing["slot"]) or existing["slot"]),
+            data.get("status", existing["status"]),
+            med_id,
+        ))
+    return get_medication(med_id)
+
+
+def delete_medication(med_id: str) -> bool:
+    with get_db() as db:
+        db.execute("DELETE FROM medications WHERE id=?", (med_id,))
         return True
 
 
@@ -250,20 +369,3 @@ def get_alerts_history(limit: int = 100) -> list[dict]:
         ).fetchall()
         return [dict(r) for r in rows]
 
-
-# ── Full Patient Context for AI ──
-
-def get_all_patients_summary() -> str:
-    """Get a compact text summary of all patients for the AI agent."""
-    patients = get_all_patients()
-    if not patients:
-        return "No patients registered in the database."
-    lines = []
-    for p in patients:
-        conds = ", ".join(p.get("conditions", [])) or "None"
-        lines.append(
-            f"- {p['name']} (ID: {p['id']}, Age: {p.get('age',0)}, "
-            f"Village: {p.get('village','')}, Conditions: {conds}, "
-            f"Status: {p.get('device_status','offline')})"
-        )
-    return f"Registered patients ({len(patients)}):\n" + "\n".join(lines)

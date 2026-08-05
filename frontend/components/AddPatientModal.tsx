@@ -157,7 +157,7 @@ export default function AddPatientModal({ isOpen, onClose, editPatient, onSave, 
                 </div>
 
                 {/* ── Body ── */}
-                <div className="p-8 max-h-[82vh] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border-color) transparent' }}>
+                <div className="p-4 sm:p-8 max-h-[80vh] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border-color) transparent' }}>
                     <form onSubmit={handleSubmit}>
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 

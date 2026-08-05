@@ -31,6 +31,14 @@ Thumbs.db
 .pio/
 firmware/*/.pio/
 
+# Backend local state (machine-specific)
+backend/ayulink.db
+backend/.cam_url
+backend/.simulation_mode.json
+backend/.bot_lang
+backend/server.log
+backend/risk_model.pkl
+
 # Agent tools
 .agent/
 

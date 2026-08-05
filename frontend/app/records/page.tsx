@@ -12,9 +12,7 @@ const statusColors = {
 
 const FALLBACK_RECORDS = [
     { id: 1, patient: 'Ramulu Goud', type: 'Blood Test', date: '2026-04-10', doctor: 'Dr. Sharma', status: 'complete', condition: 'Diabetes Type 2' },
-    { id: 2, patient: 'Laxmi Narsamma', type: 'ECG Report', date: '2026-04-09', doctor: 'Dr. Patel', status: 'complete', condition: 'Hypertension' },
-    { id: 3, patient: 'Srinivas Reddy', type: 'Lab Report', date: '2026-04-08', doctor: 'Dr. Kumar', status: 'review', condition: 'High Cholesterol' },
-    { id: 4, patient: 'Buchamma', type: 'Vitals Report', date: '2026-04-07', doctor: 'Dr. Sharma', status: 'complete', condition: 'General Checkup' },
+    { id: 2, patient: 'Ramulu Goud', type: 'ECG Report', date: '2026-04-09', doctor: 'Dr. Patel', status: 'complete', condition: 'Hypertension' },
 ]
 
 export default function MedicalRecordsPage() {

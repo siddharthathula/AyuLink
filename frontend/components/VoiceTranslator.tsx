@@ -125,17 +125,16 @@ export default function VoiceTranslator() {
         }
     }
 
-    const simulateVoice = () => {
-        let fakeInput = ""
-        if (lang === 'te-IN') {
-            fakeInput = "డాక్టర్ గారు, నాకు నిన్న రాత్రి నుండి చాలా జ్వరంగా ఉంది మరియు తలనొప్పిగా కూడా ఉంది." // Telugu: Doctor, I have a high fever and headache since last night.
-        } else if (lang === 'hi-IN') {
-            fakeInput = "डॉक्टर साहब, मुझे कल रात से बहुत तेज बुखार है और सर में दर्द भी है।"
-        } else {
-            fakeInput = "Doctor, I have had a high fever and a severe headache since last night."
+    const speakText = (text: string) => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            // Cancel any current speech
+            window.speechSynthesis.cancel()
+
+            const utterance = new SpeechSynthesisUtterance(text)
+            utterance.lang = 'en-US'
+            utterance.rate = 0.95
+            window.speechSynthesis.speak(utterance)
         }
-        setTranscript(fakeInput)
-        handleRealTranslation(fakeInput)
     }
 
     const handleRealTranslation = async (text: string) => {
@@ -188,18 +187,20 @@ export default function VoiceTranslator() {
         }
     }
 
-    const speakText = (text: string) => {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
-            // Cancel any current speech
-            window.speechSynthesis.cancel()
-
-            const utterance = new SpeechSynthesisUtterance(text)
-            utterance.rate = 0.9
-            utterance.pitch = 1
-            utterance.lang = 'en-US'
-            window.speechSynthesis.speak(utterance)
+    const simulateVoice = () => {
+        let fakeInput = ""
+        if (lang === 'te-IN') {
+            fakeInput = "డాక్టర్ గారు, నాకు నిన్న రాత్రి నుండి చాలా జ్వరంగా ఉంది మరియు తలనొప్పిగా కూడా ఉంది." // Telugu: Doctor, I have a high fever and headache since last night.
+        } else if (lang === 'hi-IN') {
+            fakeInput = "डॉक्टर साहब, मुझे कल रात से बहुत तेज बुखार है और सर में दर्द भी है।"
+        } else {
+            fakeInput = "Doctor, I have had a high fever and a severe headache since last night."
         }
+        setTranscript(fakeInput)
+        handleRealTranslation(fakeInput)
     }
+
+
 
     const processClinicalNote = (englishText: string) => {
         // Simulate AI processing naming entities on the ENGLISH text

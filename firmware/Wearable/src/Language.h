@@ -138,7 +138,7 @@ inline void cycleLanguage() {
 // These correspond to MP3/WAV files on SD card
 // Format: /sounds/{lang}/{message_id}.mp3
 
-const char *AUDIO_PATHS[] = {"/sounds/en/", "/sounds/hi/", "/sounds/te/"};
+static const char *AUDIO_PATHS[] = {"/sounds/en/", "/sounds/hi/", "/sounds/te/"};
 
 inline String getAudioPath(const char *messageId) {
   return String(AUDIO_PATHS[currentLanguage]) + String(messageId) + ".mp3";

@@ -90,7 +90,7 @@ export default function MedicineScheduleManager() {
                 setSchedules([
                     { id: 'S-1', patientId: 'P-001', patientName: 'Ramulu Goud', medicine: 'Metformin', dosage: '500mg', pillsPerDose: 1, times: ['08:00'], days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], dispenserId: 'D-101', slot: 1, enabled: true, status: 'pending' },
                     { id: 'S-2', patientId: 'P-001', patientName: 'Ramulu Goud', medicine: 'Atorvastatin', dosage: '20mg', pillsPerDose: 1, times: ['20:00'], days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], dispenserId: 'D-101', slot: 2, enabled: true, status: 'pending' },
-                    { id: 'S-3', patientId: 'P-002', patientName: 'Laxmi Narsamma', medicine: 'Amlodipine', dosage: '5mg', pillsPerDose: 1, times: ['09:00'], days: ['Mon', 'Wed', 'Fri'], dispenserId: 'D-102', slot: 1, enabled: true, status: 'taken' },
+                    { id: 'S-3', patientId: '108', patientName: 'Ramulu Goud', medicine: 'Amlodipine', dosage: '5mg', pillsPerDose: 1, times: ['09:00'], days: ['Mon', 'Wed', 'Fri'], dispenserId: 'D-101', slot: 3, enabled: true, status: 'taken' },
                 ])
                 setLoading(false)
                 return

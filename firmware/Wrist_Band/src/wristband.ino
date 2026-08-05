@@ -83,6 +83,7 @@ bool hubReceived = false;
 
 // ── TX ──
 unsigned long lastTxMs = 0;
+unsigned long lastMpuRetryMs = 0;
 #define TX_INTERVAL_MS 2000 // send vitals every 2s normal
 #define TX_INTERVAL_EMERGENCY_MS 800 // faster TX during SOS/Fall
 
@@ -584,17 +585,25 @@ void setup() {
   u8g2.sendBuffer();
   delay(600);
 
-  // MPU6050
+  // MPU6050 (retry up to 3x — flaky I2C bus can recover)
+  mpuOk = false;
   Serial.print("[MPU6050] Init... ");
-  if (mpu.begin()) {
-    mpuOk = true;
-    mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
-    mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-    mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-    Serial.println("OK — Fall/Tremor detection ACTIVE");
-  } else {
-    Serial.println("FAILED — Fall detection disabled");
+  for (int attempt = 1; attempt <= 3 && !mpuOk; attempt++) {
+    if (attempt > 1) {
+      Serial.print("retry#");
+      Serial.print(attempt);
+      Serial.print("... ");
+      delay(300);
+    }
+    if (mpu.begin()) {
+      mpuOk = true;
+      mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
+      mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+      mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+      Serial.println("OK — Fall/Tremor detection ACTIVE");
+    }
   }
+  if (!mpuOk) Serial.println("FAILED — Fall detection disabled (will auto-retry in loop)");
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
   u8g2.drawStr(0, 20, mpuOk ? "MPU6050: OK" : "MPU6050: FAIL");
@@ -651,6 +660,25 @@ void loop() {
   checkFall();      // Real MPU6050
   checkSOS();       // Real button
   checkLoRaRX();    // LoRa downlink
+
+  // Auto-recover MPU6050 if init failed (flaky I2C bus)
+  if (!mpuOk && now - lastMpuRetryMs >= 10000) {
+    lastMpuRetryMs = now;
+    Serial.print("[MPU6050] Re-init... ");
+    if (mpu.begin()) {
+      mpuOk = true;
+      mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
+      mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+      mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+      Serial.println("RECOVERED — Fall/Tremor detection ACTIVE");
+      u8g2.clearBuffer();
+      u8g2.setFont(u8g2_font_6x10_tr);
+      u8g2.drawStr(0, 20, "MPU6050: OK");
+      u8g2.sendBuffer();
+    } else {
+      Serial.println("still failed");
+    }
+  }
 
   // TX interval: faster during emergencies for reliable delivery
   unsigned long txInterval = (sosActive || fallActive || tremorActive) ? TX_INTERVAL_EMERGENCY_MS : TX_INTERVAL_MS;

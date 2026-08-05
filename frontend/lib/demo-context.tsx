@@ -11,52 +11,41 @@ interface DemoContextType {
 const DemoContext = createContext<DemoContextType | undefined>(undefined)
 
 export function DemoProvider({ children }: { children: React.ReactNode }) {
-    // Initialize from localStorage if available
-    const [isDemoMode, setIsDemoMode] = useState(false)
-    const [initialized, setInitialized] = useState(false)
-
-    // Persist demo mode preference — restore from localStorage on mount
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem('ayulink_demo_mode')
-            if (saved !== null) {
-                setIsDemoMode(JSON.parse(saved))
-            }
-            // If no saved preference, auto-detect: check if DB has patients
-            // If empty, auto-enable demo mode so judges always see data
-            if (saved === null || saved === 'false') {
-                autoDetectDemoMode()
-            }
-        } catch {
-            setIsDemoMode(false)
+    const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('ayulink_simulation_mode')
+            return saved === 'true'
         }
-        setInitialized(true)
+        return false
+    })
+
+    // On mount: sync with backend simulation API
+    useEffect(() => {
+        fetch('/api/simulation')
+            .then(r => r.json())
+            .then(d => {
+                if (typeof d.enabled === 'boolean') {
+                    setIsDemoMode(d.enabled)
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('ayulink_simulation_mode', String(d.enabled))
+                    }
+                }
+            })
+            .catch(() => {})
     }, [])
 
-    const autoDetectDemoMode = async () => {
-        try {
-            const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
-            const res = await fetch(`http://${host}:8000/api/patients`, { signal: AbortSignal.timeout(3000) })
-            const data = await res.json()
-            if (data.ok && (!data.patients || data.patients.length === 0)) {
-                // Database empty — auto-enable demo mode
-                setIsDemoMode(true)
-                localStorage.setItem('ayulink_demo_mode', 'true')
-            }
-        } catch {
-            // Backend not reachable — enable demo mode as fallback
-            setIsDemoMode(true)
-            localStorage.setItem('ayulink_demo_mode', 'true')
-        }
-    }
-
-    const setDemoMode = (value: boolean) => {
+    const setDemoMode = async (value: boolean) => {
         setIsDemoMode(value)
-        localStorage.setItem('ayulink_demo_mode', JSON.stringify(value))
-        // Reload page to ensure clean state reset
         if (typeof window !== 'undefined') {
-            setTimeout(() => window.location.reload(), 100)
+            localStorage.setItem('ayulink_simulation_mode', String(value))
         }
+        try {
+            await fetch('/api/simulation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: value }),
+            })
+        } catch { /* best-effort */ }
     }
 
     const toggleDemoMode = () => {

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useDemoMode } from '@/lib/demo-context'
+import { playAlertSound } from '@/lib/alert-sound'
 
 // Mock Data Generators
 const PATIENTS = [
@@ -36,8 +37,8 @@ export default function DemoSimulator() {
 
         const emitRandomVital = () => {
             const patient = demoPatients[Math.floor(Math.random() * demoPatients.length)]
-            // REDUCED PROBABILITY: 0.5% Critical (Stops spamming)
-            const isCritical = Math.random() > 0.995
+            // Background data stays normal; emergency alerts require an intentional demo action.
+            const isCritical = false
 
             // WEAR DETECTION LOGIC (90% chance worn)
             const isWorn = Math.random() > 0.1
@@ -129,14 +130,12 @@ export default function DemoSimulator() {
         window.addEventListener('trigger-manual-sos', handleSOS)
         window.addEventListener('trigger-simulate-emergency', handleSimulateEmergency)
 
-        // Emit random vitals every 5 seconds for visual density
+        // Emit random vitals every 5 seconds for visual density (normal vitals only)
         intervalRef.current = setInterval(emitRandomVital, 5000)
 
-        // ── AUTO-TRIGGER CRITICAL ALERT after 30 seconds ──
-        // Ensures judges ALWAYS see the emergency response flow
-        criticalTimerRef.current = setTimeout(() => {
-            fireCriticalAlert()
-        }, 30000)
+        // One deliberate preview proves the emergency path when demo data is enabled.
+        // It runs once per activation; all later emergencies are manual.
+        criticalTimerRef.current = setTimeout(fireCriticalAlert, 1500)
 
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current)
@@ -149,6 +148,7 @@ export default function DemoSimulator() {
 
     // ── Fire a critical LowOxygen alert for demo ──
     const fireCriticalAlert = () => {
+        playAlertSound()
         // Dispatch vitals-update with critical values
         window.dispatchEvent(new CustomEvent('vitals-update', {
             detail: {

@@ -27,6 +27,8 @@ class AlertType(str, Enum):
     DEVICE_NOT_WORN = "not_worn"
     AIR_QUALITY = "air_quality"
     FLAME_DETECTED = "flame_detected"
+    BP_HIGH = "bp_high"
+    BP_LOW = "bp_low"
 
 
 class VitalReading(BaseModel):

@@ -434,7 +434,7 @@ export default function HardwareStatusPanel() {
                     <span style={{ color: 'var(--text-muted)' }}>Air Quality</span>
                   </div>
                   <span className="font-bold" style={{
-                    color: (device.hubData.air_ppm || 0) > 300 ? '#ef4444' : (device.hubData.air_ppm || 0) > 150 ? '#f59e0b' : '#10b981'
+                    color: (device.hubData.air_ppm || 0) > 500 ? '#ef4444' : (device.hubData.air_ppm || 0) > 300 ? '#f59e0b' : '#10b981'
                   }}>
                     {device.hubData.air_ppm || 0} PPM
                   </span>

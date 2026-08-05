@@ -5,11 +5,7 @@
 
 const mockStore: Record<string, any[]> = {
     patients: [
-        { id: 'P-001', name: 'Ramulu Goud', village: 'Shadnagar', status: 'normal', age: 68, gender: 'Male', condition: 'Hypertension', bloodGroup: 'O+', phone: '+91 9876543210', emergencyContact: '+91 9876543211', abhaId: '12-3456-7890-1234', rationCardType: 'BPL', allergies: [], lat: 17.066, lng: 78.066 },
-        { id: 'P-002', name: 'Laxmi Narsamma', village: 'Maheshwaram', status: 'normal', age: 72, gender: 'Female', condition: 'Diabetes', bloodGroup: 'A+', phone: '+91 9876543212', emergencyContact: '+91 9876543213', abhaId: '23-4567-8901-2345', rationCardType: 'APL', allergies: [], lat: 17.076, lng: 78.076 },
-        { id: 'P-003', name: 'Srinivas Reddy', village: 'Shamshabad', status: 'offline', age: 58, gender: 'Male', condition: 'Arthritis', bloodGroup: 'B+', phone: '+91 9876543214', emergencyContact: '+91 9876543215', abhaId: '34-5678-9012-3456', rationCardType: 'BPL', allergies: [], lat: 17.056, lng: 78.056 },
-        { id: 'P-004', name: 'Buchamma', village: 'Chevella', status: 'normal', age: 65, gender: 'Female', condition: 'COPD', bloodGroup: 'AB+', phone: '+91 9876543216', emergencyContact: '+91 9876543217', abhaId: '45-6789-0123-4567', rationCardType: 'BPL', allergies: ['Peanuts'], lat: 17.086, lng: 78.086 },
-        { id: 'P-005', name: 'Venkat Rao', village: 'Ibrahimpatnam', status: 'normal', age: 55, gender: 'Male', condition: 'Hypertension', bloodGroup: 'O+', phone: '+91 9876543218', emergencyContact: '+91 9876543219', abhaId: '56-7890-1234-5678', rationCardType: 'APL', allergies: [], lat: 17.096, lng: 78.096 },
+        { id: '108', name: 'Ramulu Goud', village: 'Hanamkonda', status: 'normal', age: 73, gender: 'Male', condition: 'Diabetes, Hypertension', bloodGroup: 'O+', phone: '+91 9876543210', emergencyContact: '+91 9876543211', abhaId: '12-3456-7890-1234', rationCardType: 'BPL', allergies: [], lat: 18.0539, lng: 79.5357 },
     ],
     vitals: [],
     patient_records: [],
@@ -43,12 +39,68 @@ function genId() {
     return Math.random().toString(36).substr(2, 9)
 }
 
+// ── Backend sync (local SQLite via FastAPI :8000) ─────────────────────────────
+// Tables below sync to the local backend DB when reachable, falling back to
+// localStorage. Everything stays on-device — no cloud anywhere.
+
+const BACKEND_TABLES = ['medications', 'patients', 'appointments']
+
+async function backendList(table: string): Promise<any[]> {
+    const res = await fetch(`/api/${table}`)
+    if (!res.ok) throw new Error('backend unreachable')
+    const d = await res.json()
+    if (!d || d.ok === false) throw new Error('backend error')
+    return d[table] || []
+}
+
+async function backendCreate(table: string, row: any): Promise<any> {
+    const res = await fetch(`/api/${table}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(row),
+    })
+    if (!res.ok) throw new Error('backend unreachable')
+    const d = await res.json()
+    if (!d || d.ok === false) throw new Error('backend error')
+    return d.medication || d.row || row
+}
+
+async function backendUpdate(table: string, id: string, row: any): Promise<void> {
+    const res = await fetch(`/api/${table}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(row),
+    })
+    if (!res.ok) throw new Error('backend unreachable')
+    const d = await res.json()
+    if (!d || d.ok === false) throw new Error('backend error')
+}
+
+async function backendDelete(table: string, id: string): Promise<void> {
+    const res = await fetch(`/api/${table}/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('backend unreachable')
+}
+
+function applyLocalUpdate(table: string, filters: Array<{ col: string; val: any }>, data: any) {
+    const rows = getStore(table).map(r => {
+        const match = filters.every(f => r[f.col] === f.val)
+        return match ? { ...r, ...data } : r
+    })
+    setStore(table, rows)
+}
+
+function applyLocalDelete(table: string, col: string, val: any) {
+    setStore(table, getStore(table).filter(r => r[col] !== val))
+}
+
 // ── Mock Supabase API surface ──────────────────────────────────────────────────
 export const supabase: any = {
     from: (table: string) => {
+        const sync = BACKEND_TABLES.includes(table)
         const chain: any = {
             _filters: [] as Array<{ col: string; val: any }>,
             _limit: undefined as number | undefined,
+            _updatePayload: undefined as any | undefined,
 
             select: function (cols?: string) { return this },
             order: function () { return this },
@@ -59,8 +111,17 @@ export const supabase: any = {
                 return this
             },
 
-            insert: function (data: any) {
+            insert: async function (data: any) {
                 const rows = Array.isArray(data) ? data : [data]
+                if (sync) {
+                    try {
+                        const created = []
+                        for (const r of rows) {
+                            created.push(await backendCreate(table, r))
+                        }
+                        return { data: created, error: null }
+                    } catch { /* fall back to localStorage below */ }
+                }
                 const existing = getStore(table)
                 const withId = rows.map(r => ({ id: genId(), created_at: new Date().toISOString(), ...r }))
                 setStore(table, [...existing, ...withId])
@@ -68,17 +129,27 @@ export const supabase: any = {
             },
 
             update: function (data: any) {
+                if (sync) {
+                    this._updatePayload = { ...data }
+                    return this
+                }
                 const rows = getStore(table).map(r => {
                     const match = this._filters.every((f: { col: string; val: any }) => r[f.col] === f.val)
                     return match ? { ...r, ...data } : r
                 })
                 setStore(table, rows)
-                return Promise.resolve({ data, error: null })
+                return this
             },
 
             delete: function () {
                 const deleteChain: any = {
-                    eq: (col: string, val: any) => {
+                    eq: async (col: string, val: any) => {
+                        if (sync) {
+                            try {
+                                await backendDelete(table, val)
+                                return { data: [], error: null }
+                            } catch { /* fall back below */ }
+                        }
                         const filtered = getStore(table).filter(r => r[col] !== val)
                         setStore(table, filtered)
                         return Promise.resolve({ data: [], error: null })
@@ -87,8 +158,30 @@ export const supabase: any = {
                 return deleteChain
             },
 
-            then: function (onfulfilled: any) {
-                let rows = getStore(table)
+            then: async function (onfulfilled: any) {
+                let rows: any[]
+                if (sync) {
+                    try {
+                        rows = await backendList(table)
+                    } catch {
+                        rows = getStore(table)
+                    }
+                } else {
+                    rows = getStore(table)
+                }
+                if (this._updatePayload) {
+                    const idFilter = this._filters.find((f: { col: string; val: any }) => f.col === 'id')
+                    if (idFilter) {
+                        try {
+                            await backendUpdate(table, idFilter.val, this._updatePayload)
+                        } catch {
+                            applyLocalUpdate(table, this._filters, this._updatePayload)
+                        }
+                    } else if (!sync) {
+                        applyLocalUpdate(table, this._filters, this._updatePayload)
+                    }
+                    this._updatePayload = undefined
+                }
                 for (const f of this._filters) rows = rows.filter((r: any) => r[f.col] === f.val)
                 if (this._limit !== undefined) rows = rows.slice(0, this._limit)
                 return Promise.resolve({ data: rows, error: null, count: rows.length }).then(onfulfilled)

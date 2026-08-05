@@ -39,7 +39,7 @@ const liveVitals: any[] = []
 // Only connect to local backend when actually running on localhost (not on Vercel / any HTTPS host)
 function isBackendLocal(): boolean {
     if (typeof window === 'undefined') return false
-    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    return window.location.protocol === 'http:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 }
 
 function getBackendUrl(path: string): string {
@@ -351,9 +351,14 @@ export default function DashboardPage() {
                         }
                     }
 
+                    if (event === 'gateway_status') {
+                        setGatewayConnected(data.connected ?? false)
+                    }
+
                     if (event === 'vital') {
-                        // Vitals only arrive via the gateway — mark it online immediately
-                        setGatewayConnected(true)
+                        if (data.is_real) {
+                            setGatewayConnected(true)
+                        }
                         window.dispatchEvent(new CustomEvent('vitals-update', {
                             detail: {
                                 patientName: data.patient_id || 'Test Patient',

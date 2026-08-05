@@ -47,6 +47,7 @@ interface MenuItem {
 // Menu with submenus
 const menuStructure: MenuItem[] = [
     { icon: LayoutDashboard, labelKey: 'dashboard', href: '/dashboard', color: 'from-teal-400 to-emerald-500' },
+    { icon: Brain, label: 'AI Agent', href: '/agent', color: 'from-purple-500 to-pink-500' },
     {
         icon: Heart,
         labelKey: 'monitoring',
@@ -83,7 +84,6 @@ const menuStructure: MenuItem[] = [
 ]
 
 const specialMenuItems: MenuItem[] = [
-    { icon: Brain, label: 'AI Agent', href: '/agent', color: 'from-purple-500 to-pink-500' },
     { icon: AlertTriangle, labelKey: 'emergency', href: '/emergency', color: 'from-red-500 to-red-600', badge: '2' },
     { icon: Home, labelKey: 'familyPortal', href: '/family', color: 'from-rose-400 to-pink-500' },
     { icon: UserCheck, label: 'ASHA Portal', href: '/asha', color: 'from-emerald-400 to-teal-500' },

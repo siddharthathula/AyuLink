@@ -87,9 +87,11 @@ export default function MedicineCompliance() {
     const [dispensing, setDispensing] = useState<number | null>(null)
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
+    const getHost = () => typeof window !== 'undefined' ? window.location.hostname : 'localhost'
+
     const fetchHub = useCallback(async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/hub')
+            const res = await fetch(`http://${getHost()}:8000/api/hub`)
             if (res.ok) {
                 const data: HubData = await res.json()
                 setHub(data)
@@ -104,34 +106,73 @@ export default function MedicineCompliance() {
 
     useEffect(() => {
         fetchHub()
-        // Poll every 3s
+        // Poll every 3s as fallback
         const interval = setInterval(fetchHub, 3000)
 
-        // Also subscribe to WebSocket hub events for instant updates
+        // Listen for window-level slot updates from other components
+        const handleCustomSlot = (e: CustomEvent) => {
+            const { slot, taken } = e.detail
+            if (slot && typeof taken === 'boolean') {
+                const key = `pill_slot${slot}` as keyof HubData
+                setHub(prev => prev ? { ...prev, [key]: taken } : prev)
+            }
+        }
+        window.addEventListener('hub-slot-update', handleCustomSlot as EventListener)
+
+        // Subscribe to WebSocket hub & state events for instant updates
         try {
-            const ws = new WebSocket('ws://localhost:8000/ws/dashboard')
+            const ws = new WebSocket(`ws://${getHost()}:8000/ws/dashboard`)
             ws.onmessage = (e) => {
                 try {
                     const msg = JSON.parse(e.data)
-                    if (msg.event === 'hub') fetchHub()
+                    const d = msg.event === 'hub' ? msg.data : msg.event === 'state' ? msg.data?.hub : null
+                    if (d) {
+                        setHub(prev => ({
+                            online: d.online ?? prev?.online ?? true,
+                            pill_slot1: d.pill_slot1 ?? prev?.pill_slot1 ?? false,
+                            pill_slot2: d.pill_slot2 ?? prev?.pill_slot2 ?? false,
+                            pill_slot3: d.pill_slot3 ?? prev?.pill_slot3 ?? false,
+                            pill_slot4: d.pill_slot4 ?? prev?.pill_slot4 ?? false,
+                            env_temp: d.env_temp ?? prev?.env_temp ?? 0,
+                            humidity: d.humidity ?? prev?.humidity ?? 0,
+                            air_ppm: d.air_ppm ?? prev?.air_ppm ?? 0,
+                            air_aqi: d.air_aqi ?? prev?.air_aqi ?? 'Good',
+                            flame: d.flame ?? prev?.flame ?? false,
+                            rtc_time: d.rtc_time ?? prev?.rtc_time ?? '',
+                            rtc_date: d.rtc_date ?? prev?.rtc_date ?? '',
+                            rssi: d.rssi ?? prev?.rssi ?? 0,
+                            uptime: d.uptime ?? prev?.uptime ?? 0,
+                            last_seen: d.last_seen ?? prev?.last_seen ?? Math.floor(Date.now() / 1000),
+                        }))
+                        setLastRefresh(new Date())
+                        setLoading(false)
+                    }
                 } catch {}
             }
             return () => {
                 clearInterval(interval)
+                window.removeEventListener('hub-slot-update', handleCustomSlot as EventListener)
                 ws.close()
             }
         } catch {
-            return () => clearInterval(interval)
+            return () => {
+                clearInterval(interval)
+                window.removeEventListener('hub-slot-update', handleCustomSlot as EventListener)
+            }
         }
     }, [fetchHub])
 
     const handleDispense = async (slot: number) => {
         setDispensing(slot)
+        // Optimistic local update
+        const key = `pill_slot${slot}` as keyof HubData
+        setHub(prev => prev ? { ...prev, [key]: true } : prev)
+        window.dispatchEvent(new CustomEvent('hub-slot-update', { detail: { slot, taken: true } }))
         try {
-            await fetch(`http://localhost:8000/api/dispense/${slot}`, { method: 'POST' })
-            setTimeout(fetchHub, 2000)  // refresh after servo moves
+            await fetch(`http://${getHost()}:8000/api/dispense/${slot}`, { method: 'POST' })
+            setTimeout(fetchHub, 1000)
         } catch {}
-        setTimeout(() => setDispensing(null), 3000)
+        setTimeout(() => setDispensing(null), 2500)
     }
 
     // Compute stats
@@ -150,56 +191,60 @@ export default function MedicineCompliance() {
     })
 
     const dispenserOnline = hub?.online ?? false
-    const lastSeenSec = hub ? Math.floor(Date.now() / 1000 - hub.last_seen) : null
+    const rawDiff = (hub && hub.last_seen > 0) ? Math.floor(Date.now() / 1000 - hub.last_seen) : null
+    const formatLastSeen = (sec: number | null) => {
+        if (sec === null || sec < 0 || sec > 86400) return ''
+        if (sec < 60) return ` · ${sec}s ago`
+        if (sec < 3600) return ` · ${Math.floor(sec / 60)}m ago`
+        return ` · ${Math.floor(sec / 3600)}h ago`
+    }
 
     return (
         <div className="h-full flex flex-col overflow-hidden animate-fadeIn">
 
             {/* ── Header ── */}
-            <div className="p-6 border-b border-white/5 bg-white/5 backdrop-blur-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-500 flex items-center justify-center shadow-lg shadow-rose-500/20">
-                            <Activity className="h-7 w-7 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                                {t('adherenceStream')}
-                            </h2>
-                            <p className="text-xs font-medium opacity-50" style={{ color: 'var(--text-muted)' }}>
-                                Live Dispenser Telemetry · Patient 108 — Ramulu Goud
-                            </p>
-                        </div>
+            <div className="p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                        <Activity className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                            {t('adherenceStream')}
+                        </h2>
+                        <p className="text-xs font-medium opacity-50" style={{ color: 'var(--text-muted)' }}>
+                            Live Dispenser Telemetry · Patient 108 — Ramulu Goud
+                        </p>
+                    </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Dispenser status badge */}
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black ${dispenserOnline ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-400 border-rose-500/30 bg-rose-500/10'}`}>
+                        {dispenserOnline ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
+                        {dispenserOnline ? 'DISPENSER LIVE' : `OFFLINE${formatLastSeen(rawDiff)}`}
                     </div>
 
-                    {/* Stats */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* Dispenser status badge */}
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black ${dispenserOnline ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-400 border-rose-500/30 bg-rose-500/10'}`}>
-                            {dispenserOnline ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-                            {dispenserOnline ? 'DISPENSER LIVE' : `OFFLINE${lastSeenSec != null ? ` · ${lastSeenSec}s ago` : ''}`}
-                        </div>
-
-                        {/* Today */}
-                        <div className="px-3 py-1.5 rounded-xl border-2 flex flex-col items-center min-w-[60px]" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-                            <span className="text-base font-black text-emerald-400 leading-none">{todayPct}%</span>
-                            <span className="text-[8px] font-black uppercase tracking-widest opacity-50 mt-0.5">Today</span>
-                        </div>
-
-                        {/* Streak */}
-                        <div className="px-3 py-1.5 rounded-xl border-2 flex flex-col items-center min-w-[60px]" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
-                            <div className="flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-amber-400" />
-                                <span className="text-base font-black text-amber-400 leading-none">{taken}</span>
-                            </div>
-                            <span className="text-[8px] font-black uppercase tracking-widest opacity-50 mt-0.5">Taken</span>
-                        </div>
-
-                        {/* Refresh */}
-                        <button onClick={fetchHub} className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/10 transition-all" title="Refresh">
-                            <RefreshCw className="h-4 w-4 opacity-50" />
-                        </button>
+                    {/* Today */}
+                    <div className="px-3 py-1.5 rounded-xl border-2 flex flex-col items-center min-w-[60px]" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+                        <span className="text-base font-black text-emerald-400 leading-none">{todayPct}%</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest opacity-50 mt-0.5">Today</span>
                     </div>
+
+                    {/* Streak */}
+                    <div className="px-3 py-1.5 rounded-xl border-2 flex flex-col items-center min-w-[60px]" style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+                        <div className="flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-amber-400" />
+                            <span className="text-base font-black text-amber-400 leading-none">{taken}</span>
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-widest opacity-50 mt-0.5">Taken</span>
+                    </div>
+
+                    {/* Refresh */}
+                    <button onClick={fetchHub} className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/10 transition-all" title="Refresh">
+                        <RefreshCw className="h-4 w-4 opacity-50" />
+                    </button>
                 </div>
 
                 {/* ── Env Sensors Row ── */}
@@ -220,9 +265,9 @@ export default function MedicineCompliance() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
-                            <Wind className={`h-4 w-4 shrink-0 ${hub.air_ppm > 200 ? 'text-rose-400' : hub.air_ppm > 100 ? 'text-amber-400' : 'text-emerald-400'}`} />
+                            <Wind className={`h-4 w-4 shrink-0 ${hub.air_ppm > 500 ? 'text-rose-400' : hub.air_ppm > 300 ? 'text-amber-400' : 'text-emerald-400'}`} />
                             <div>
-                                <p className={`text-xs font-black ${hub.air_ppm > 200 ? 'text-rose-400' : hub.air_ppm > 100 ? 'text-amber-400' : 'text-emerald-400'}`}>{hub.air_ppm} PPM</p>
+                                <p className={`text-xs font-black ${hub.air_ppm > 500 ? 'text-rose-400' : hub.air_ppm > 300 ? 'text-amber-400' : 'text-emerald-400'}`}>{hub.air_ppm} PPM</p>
                                 <p className="text-[9px] opacity-50 uppercase tracking-wider">{hub.air_aqi}</p>
                             </div>
                         </div>

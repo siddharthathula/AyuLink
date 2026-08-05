@@ -5,3 +5,7 @@ aiohttp
 python-dotenv
 pydantic
 rich
+httpx
+groq
+python-telegram-bot
+gtts

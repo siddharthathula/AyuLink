@@ -78,19 +78,23 @@ LANG_NAMES = {"en": "English", "te": "Telugu (తెలుగు)", "hi": "Hindi
 
 # Native-language confirmation messages
 LANG_CONFIRM = {
-    "en": "✅ Language set to *English*\nAll alerts and voice notes will now be in English.",
-    "te": "✅ భాష *తెలుగు*కు మార్చబడింది\nభవిష్యత్తులో అన్ని హెచ్చరికలు తెలుగులో వస్తాయి.",
-    "hi": "✅ भाषा *हिंदी* में बदल दी गई\nसभी अलर्ट और वॉयस नोट्स अब हिंदी में होंगे।",
-    "kn": "✅ ಭಾಷೆ *ಕನ್ನಡ*ಕ್ಕೆ ಬದಲಾಯಿಸಲಾಗಿದೆ\nಮುಂದಿನ ಎಲ್ಲ ಎಚ್ಚರಿಕೆಗಳು ಕನ್ನಡದಲ್ಲಿ ಬರುತ್ತವೆ.",
-    "ta": "✅ மொழி *தமிழ்*ஆக மாற்றப்பட்டது\nவருங்கால எச்சரிக்கைகள் தமிழில் இருக்கும்.",
+    "en": "Language set to *English*\nAll alerts and voice notes will now be in English.",
+    "te": "భాష *తెలుగు*కు మార్చబడింది\nభవిష్యత్తులో అన్ని హెచ్చరికలు తెలుగులో వస్తాయి.",
+    "hi": "भाषा *हिंदी* में बदल दी गई\nसभी अलर्ट और वॉयस नोट्स अब हिंदी में होंगे।",
+    "kn": "ಭಾಷೆ *కನ್ನಡ*ಕ್ಕೆ ಬದಲಾಯಿಸಲಾಗಿದೆ\nಮುಂದಿನ ಎಲ್ಲ ಎಚ್ಚರಿಕೆಗಳು ಕನ್ನಡದಲ್ಲಿ ಬರುತ್ತವೆ.",
+    "ta": "மொழி *தமிழ்*ஆக மாற்றப்பட்டது\nவருங்கால எச்சரிக்கைகள் தமிழில் இருக்கும்.",
 }
 
 _alert_cooldowns: dict[str, float] = {}
-ALERT_COOLDOWN_SEC = 300  # 5 min per alert-type per patient
+ALERT_COOLDOWN_SEC = 300             # normal: 1 msg per alert-type per patient / 5 min
+EMERGENCY_COOLDOWN_SEC = 20          # emergency: repeats every 20s (life-safety)
 
 # Global per-patient cooldown: max 1 alert per patient per N seconds (any type)
 _patient_cooldowns: dict[str, float] = {}
-PATIENT_COOLDOWN_SEC = 60  # 1 message per patient per minute, regardless of type
+PATIENT_COOLDOWN_SEC = 60            # normal: 1 msg per patient / min
+EMERGENCY_PATIENT_COOLDOWN_SEC = 10  # emergency: 1 msg per patient / 10s
+
+EMERGENCY_TYPES = {"sos", "fall", "cardiac", "flame_detected"}
 
 _bot: Optional[Bot] = None
 _engine_ref = None
@@ -109,18 +113,20 @@ def set_ai_agent(agent):
     global _ai_agent_ref
     _ai_agent_ref = agent
 
-def _can_alert(key: str) -> bool:
-    """Per alert-type+patient cooldown check."""
+def _can_alert(key: str, emergency: bool = False) -> bool:
+    """Per alert-type+patient cooldown check. Emergencies repeat much faster."""
+    cooldown = EMERGENCY_COOLDOWN_SEC if emergency else ALERT_COOLDOWN_SEC
     now = time.time()
-    if key in _alert_cooldowns and (now - _alert_cooldowns[key]) < ALERT_COOLDOWN_SEC:
+    if key in _alert_cooldowns and (now - _alert_cooldowns[key]) < cooldown:
         return False
     _alert_cooldowns[key] = now
     return True
 
-def _can_alert_patient(patient_name: str) -> bool:
+def _can_alert_patient(patient_name: str, emergency: bool = False) -> bool:
     """Global per-patient cooldown — prevents any alert spam regardless of type."""
+    cooldown = EMERGENCY_PATIENT_COOLDOWN_SEC if emergency else PATIENT_COOLDOWN_SEC
     now = time.time()
-    if patient_name in _patient_cooldowns and (now - _patient_cooldowns[patient_name]) < PATIENT_COOLDOWN_SEC:
+    if patient_name in _patient_cooldowns and (now - _patient_cooldowns[patient_name]) < cooldown:
         return False
     _patient_cooldowns[patient_name] = now
     return True
@@ -137,10 +143,11 @@ async def send_alert(alert_type: str, message: str, patient_name: str = "",
     if _bot is None:
         return
     key = f"{alert_type}:{patient_name}"
-    if not _can_alert(key):
+    emergency = alert_type in EMERGENCY_TYPES
+    if not _can_alert(key, emergency):
         return
     # Also check the global per-patient throttle to prevent spam
-    if not _can_alert_patient(patient_name):
+    if not _can_alert_patient(patient_name, emergency):
         return
 
     global FAMILY_LANG
@@ -169,6 +176,9 @@ async def send_alert(alert_type: str, message: str, patient_name: str = "",
         if value:
             text += f"📊 {value}\n"
         text += f"⏰ `{time.strftime('%H:%M:%S')}`"
+
+    if not tmpl and lang in LOCALIZED_FALLBACKS:
+        text = LOCALIZED_FALLBACKS[lang].format(name=patient_name or "Unknown", village=village, value=value or message)
 
     # Add inline buttons for emergencies
     markup = None
@@ -207,6 +217,23 @@ async def send_alert(alert_type: str, message: str, patient_name: str = "",
         logger.error(f"[Telegram] Alert failed: {e}")
 
 
+async def send_report(text: str, chat_id: int | None = None):
+    """Send a manual (non-throttled) report message — used by AI Health Report."""
+    global _bot
+    if _bot is None:
+        return False
+    try:
+        await _bot.send_message(
+            chat_id=chat_id or TELEGRAM_CHAT_ID,
+            text=text,
+            parse_mode="Markdown",
+        )
+        return True
+    except TelegramError as e:
+        logger.error(f"[Telegram] Report send failed: {e}")
+        return False
+
+
 # ─────────────────────────────────────────────────────────────────
 #  VOICE ALERT SENDER (gTTS)
 # ─────────────────────────────────────────────────────────────────
@@ -216,6 +243,7 @@ async def send_voice_alert(text: str, lang: str = "te"):
     global _bot
     if _bot is None:
         return
+    lang = lang if lang in {"en", "te", "hi", "kn", "ta"} else "en"
     try:
         # Run gTTS in a thread to prevent blocking the async loop
         # gTTS needs internet - use explicit timeout via requests session
@@ -223,15 +251,16 @@ async def send_voice_alert(text: str, lang: str = "te"):
             import requests
             session = requests.Session()
             session.request = lambda method, url, **kwargs: requests.Session.request(
-                session, method, url, timeout=15, **kwargs
+                session, method, url, timeout=5, **kwargs
             )
             tts = gTTS(text=text[:500], lang=lang)  # cap at 500 chars
             buf = io.BytesIO()
             tts.write_to_fp(buf)
             buf.seek(0)
+            buf.name = f"ayulink-alert-{lang}.mp3"
             return buf
             
-        buf = await asyncio.wait_for(asyncio.to_thread(_generate_audio), timeout=20)
+        buf = await asyncio.wait_for(asyncio.to_thread(_generate_audio), timeout=6)
         await _bot.send_voice(chat_id=TELEGRAM_CHAT_ID, voice=buf)
         logger.info(f"[Telegram] Voice alert sent (lang: {lang})")
     except asyncio.TimeoutError:
@@ -514,7 +543,7 @@ async def cmd_slots(update: Update, context: ContextTypes.DEFAULT_TYPE):
     slots_text = ""
     for label, taken_status in zip(slot_icons, slots):
         slots_text += f"{'✅' if taken_status else '⬜'} {label}: {'Taken' if taken_status else 'Pending'}\n"
-    aqi_emoji = "🔴" if (hub.air_ppm or 0) > 300 else "🟡" if (hub.air_ppm or 0) > 150 else "✅"
+    aqi_emoji = "🔴" if (hub.air_ppm or 0) > 500 else "🟡" if (hub.air_ppm or 0) > 300 else "✅"
     text = (
         f"💊 *AyuLink Pill Dispenser*\n━━━━━━━━━━━━━━━━━━━━\n"
         f"📡 {online_str} | ⏰ `{hub.rtc_time or 'N/A'}`\n\n"
@@ -723,6 +752,16 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❓ Unknown command. Use /help for available commands.")
 
+
+# Voice text is localized even for alert types without a dedicated template.
+# This prevents gTTS from receiving English words when the family selected an
+# Indian language.
+LOCALIZED_FALLBACKS = {
+    "te": "హెచ్చరిక. {name}. {value}. స్థలం: {village}. దయచేసి వెంటనే తనిఖీ చేయండి.",
+    "hi": "चेतावनी। {name}. {value}. स्थान: {village}. कृपया तुरंत जांच करें।",
+    "kn": "ಎಚ್ಚರಿಕೆ. {name}. {value}. ಸ್ಥಳ: {village}. ದಯವಿಟ್ಟು ತಕ್ಷಣ ಪರಿಶೀಲಿಸಿ.",
+    "ta": "எச்சரிக்கை. {name}. {value}. இடம்: {village}. உடனடியாக சரிபார்க்கவும்.",
+}
 
 # ─────────────────────────────────────────────────────────────────
 #  BOT LIFECYCLE

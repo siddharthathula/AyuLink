@@ -28,24 +28,39 @@ import os
 
 from config import BACKEND_HOST, BACKEND_PORT, GATEWAY_WS_URL
 import config
-from models import VitalReading, HubReading
+from models import VitalReading, HubReading, PatientState
 from threshold_engine import ThresholdEngine
 from mock_stream import MockDataStream
 from ai_agent import AyuAgent
 import database as db
 import telegram_bot as tgbot
 
+_SIMULATION_MODE_FILE = Path(__file__).with_name(".simulation_mode.json")
+def _load_simulation_mode() -> bool:
+    try:
+        return bool(json.loads(_SIMULATION_MODE_FILE.read_text()).get("enabled", False))
+    except Exception:
+        return False
+
+def _save_simulation_mode(enabled: bool) -> None:
+    try:
+        _SIMULATION_MODE_FILE.write_text(json.dumps({"enabled": enabled}))
+    except Exception as exc:
+        console.print(f"  [yellow]Could not save simulation setting: {exc}[/]")
+
+
 # ── Globals ──────────────────────────────────────────────
 
 console = Console()
-engine = ThresholdEngine()
+# engine initialized after USE_MOCK is defined
 ai_agent: AyuAgent | None = None
 mock_stream: MockDataStream | None = None
 dashboard_clients: set[WebSocket] = set()
 hub_ws: WebSocket | None = None
 gateway_ws: WebSocket | None = None  # Gateway ESP32 connects here as WS client
-USE_MOCK = False   # LIVE mode: Gateway ESP32 is the real data source
+USE_MOCK = _load_simulation_mode()  # User-controlled setting; real data takes precedence while connected
 GATEWAY_CONNECTED = False
+engine = ThresholdEngine(use_mock=USE_MOCK)
 
 # Load persisted cam URL from file (survives restarts)
 _CAM_URL_FILE = os.path.join(os.path.dirname(__file__), ".cam_url")
@@ -86,10 +101,14 @@ async def _camera_proxy_loop():
                         async for chunk in response.aiter_bytes():
                             buffer += chunk
                             start = buffer.find(b"\xff\xd8")
-                            end = buffer.find(b"\xff\xd9")
-                            if start != -1 and end != -1 and end > start:
-                                latest_cam_frame = buffer[start:end+2]
-                                buffer = buffer[end+2:]
+                            if start != -1:
+                                buffer = buffer[start:]
+                                end = buffer.find(b"\xff\xd9")
+                                if end != -1:
+                                    latest_cam_frame = buffer[:end+2]
+                                    buffer = buffer[end+2:]
+                            elif len(buffer) > 500000:
+                                buffer = b""
                     else:
                         await asyncio.sleep(2)
         except Exception as e:
@@ -147,7 +166,8 @@ async def broadcast_full_state():
     state = engine.get_dashboard_state()
     # Include gateway connection status so dashboard banner updates correctly
     state["gateway_connected"] = GATEWAY_CONNECTED and gateway_ws is not None
-    state["use_mock"] = USE_MOCK
+    state["use_mock"] = USE_MOCK and not GATEWAY_CONNECTED
+    state["simulation_enabled"] = USE_MOCK
     await broadcast_to_dashboards("state", state)
 
 
@@ -423,7 +443,7 @@ async def run_mock_stream():
     try:
         mock_stream = MockDataStream()
         console.print(f"  [cyan]Mock IoT stream started ({len(config.DEMO_PATIENTS)} patient + hub)[/]")
-        await mock_stream.run(on_vital=handle_vital, on_hub=handle_hub)
+        await mock_stream.run(on_vital=handle_vital, on_hub=handle_hub, enabled_check=lambda: USE_MOCK and not GATEWAY_CONNECTED)
     except Exception as e:
         console.print(f"  [bold red]Mock stream error: {e}[/]")
         import traceback
@@ -533,14 +553,12 @@ async def lifespan(app: FastAPI):
         except Exception as te:
             console.print(f"  [yellow]Telegram Bot error: {te}[/]")
 
+    # Always register mock stream background task (enabled_check gates actual mock emission)
+    tasks.append(asyncio.create_task(run_mock_stream()))
     if USE_MOCK:
         console.print("  [yellow]Mode: MOCK (simulated data — no real hardware)[/]")
-        tasks.append(asyncio.create_task(run_mock_stream()))
     else:
         console.print(f"  [bold green]Mode: LIVE — waiting for Gateway ESP32 on /ws/gateway[/]")
-        # Gateway connects TO us via /ws/gateway — do NOT try to connect to gateway
-        # (connect_to_gateway() was resetting GATEWAY_CONNECTED=False every 5s)
-        # Gateway connects TO us at /ws/gateway — no outbound task needed
 
     tasks.append(asyncio.create_task(periodic_state_broadcast()))
     tasks.append(asyncio.create_task(terminal_status_display()))
@@ -594,9 +612,34 @@ async def api_status():
     """Get full system status."""
     state = engine.get_dashboard_state()
     state["gateway_connected"] = GATEWAY_CONNECTED and gateway_ws is not None
-    state["use_mock"] = USE_MOCK
+    state["use_mock"] = USE_MOCK and not GATEWAY_CONNECTED
+    state["simulation_enabled"] = USE_MOCK
     state["dashboards_connected"] = len(dashboard_clients)
     return state
+
+
+@app.get("/api/simulation")
+async def api_get_simulation():
+    """Get simulation mode status."""
+    return {"ok": True, "enabled": USE_MOCK, "active": USE_MOCK and not GATEWAY_CONNECTED, "gateway_connected": GATEWAY_CONNECTED}
+
+
+@app.post("/api/simulation")
+async def api_set_simulation(request: Request):
+    """Toggle simulation mode on or off."""
+    global USE_MOCK
+    body = await request.json()
+    enabled = bool(body.get("enabled", False))
+    USE_MOCK = enabled
+    _save_simulation_mode(USE_MOCK)
+
+    if USE_MOCK:
+        console.print("  [yellow]⚡ Simulation mode ENABLED by user[/]")
+    else:
+        console.print("  [yellow]⚡ Simulation mode DISABLED by user[/]")
+
+    await broadcast_full_state()
+    return {"ok": True, "enabled": USE_MOCK}
 
 
 @app.post("/api/test-fall")
@@ -678,6 +721,40 @@ async def api_agent_risk_default():
     from ai_agent import compute_risk_score
     risk = compute_risk_score("108")
     return {"ok": True, "patient_id": "108", "risk": risk}
+
+
+@app.get("/api/agent/report/{patient_id}")
+async def api_agent_report(patient_id: str):
+    """Generate or retrieve AI health report for a patient."""
+    if not ai_agent:
+        return {"ok": False, "error": "AI Agent not initialized"}
+    report_data = await ai_agent.health_report(patient_id)
+    if report_data:
+        return {"ok": True, "report": report_data}
+    return {"ok": False, "error": f"Patient {patient_id} not found or has no data"}
+
+
+@app.post("/api/agent/report/send/{patient_id}")
+async def api_agent_report_send(patient_id: str):
+    """Send AI health report to Telegram."""
+    if not ai_agent:
+        return {"ok": False, "error": "AI Agent not initialized", "sent": False}
+    report_data = await ai_agent.health_report(patient_id)
+    if not report_data:
+        return {"ok": False, "error": f"Patient {patient_id} not found", "sent": False}
+
+    concerns_txt = ", ".join(report_data.get("ai_concerns", [])) or "None"
+    msg = (
+        f"📋 *HEALTH HANDOFF REPORT*\n"
+        f"👤 *Patient:* {report_data.get('patient', patient_id)} (ID: {report_data.get('patient_id', patient_id)}, Age: {report_data.get('age', 0)})\n"
+        f"📍 *Village:* {report_data.get('village', 'Unknown')}\n"
+        f"⚠️ *Risk Score:* {report_data.get('risk_score', 0)}/100 ({str(report_data.get('risk_level', 'low')).upper()})\n\n"
+        f"💡 *AI Summary:* {report_data.get('ai_summary', '')}\n\n"
+        f"🚨 *Concerns:* {concerns_txt}\n\n"
+        f"🩺 *Recommendation:* {report_data.get('ai_recommendation', '')}"
+    )
+    sent = await tgbot.send_report(msg)
+    return {"ok": True, "sent": sent, "report": report_data}
 
 
 @app.post("/api/agent/analyze")
@@ -763,15 +840,13 @@ async def api_agent_chat(request: Request):
             f"Message: {message}"
         )
         try:
-            extract_r = await ai_agent.client.chat.completions.create(
-                model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+            raw = await ai_agent.create_completion(
                 messages=[
                     {"role": "system", "content": "You are a data extractor. Return only valid JSON. No markdown."},
                     {"role": "user", "content": extract_prompt},
                 ],
                 max_tokens=200, temperature=0.1,
             )
-            raw = extract_r.choices[0].message.content.strip()
             # Strip markdown code fences if present
             raw = re.sub(r"```json|```", "", raw).strip()
             patient_data = json.loads(raw)
@@ -885,19 +960,43 @@ async def api_agent_chat(request: Request):
         f"QUESTION: {message}"
     )
 
+    do_stream = body.get("stream", False)
+    if do_stream:
+        from fastapi.responses import StreamingResponse
+        async def event_generator():
+            try:
+                async for delta in ai_agent.stream_chat(
+                    model="",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    max_tokens=250,
+                    temperature=0.5
+                ):
+                    if delta:
+                        yield f"data: {json.dumps({'delta': delta})}\n\n"
+                yield f"data: {json.dumps({'done': True})}\n\n"
+            except Exception as e:
+                console.print(f"[red]AI Agent Stream Error: {repr(e)}[/]")
+                err_msg = f"AI Error ({ai_agent.mode.upper()} mode): {str(e)}"
+                yield f"data: {json.dumps({'delta': err_msg})}\n\n"
+                yield f"data: {json.dumps({'done': True})}\n\n"
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+
     try:
-        r = await ai_agent.client.chat.completions.create(
-            model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+        reply = await ai_agent.create_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             max_tokens=250, temperature=0.5,
         )
-        return {"ok": True, "reply": r.choices[0].message.content, "language": language}
+        return {"ok": True, "reply": reply, "language": language}
     except Exception as e:
         console.print(f"[red]Groq API Error: {repr(e)}[/]")
-        fallback_reply = "I'm currently unable to process complex requests due to high network load. However, you can see live vitals and alerts clearly on the dashboard."
+        fallback_reply = f"AI Error ({ai_agent.mode.upper()} mode): {str(e)}"
         return {"ok": True, "reply": fallback_reply, "language": language, "error_details": repr(e)}
 
 
@@ -983,23 +1082,24 @@ async def api_medical_search(request: Request):
         )
     else:
         system_prompt = (
-            "You are a medical knowledge AI. Answer the medical query with structured information. "
+            "You are AyuLink AI Medical & System Assistant. Answer medical and system queries concisely and accurately. "
+            "When queried about AyuLink patients or system status, use the provided System Context to answer directly. "
             "ALWAYS respond with a valid JSON object (no markdown). "
             "JSON schema: {\"topic\": str, \"type\": \"general\", \"overview\": str, "
             "\"key_points\": [str], \"clinical_significance\": str, "
             "\"related_topics\": [str], \"references\": [str]}"
         )
 
+    db_summary = db.get_all_patients_summary()
+
     try:
-        r = await ai_agent.client.chat.completions.create(
-            model=os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+        raw = await ai_agent.create_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Query: {query}\nRespond in {lang_name}. Return ONLY valid JSON."},
+                {"role": "user", "content": f"Query: {query}\nSystem Context: {db_summary}\nRespond in {lang_name}. Return ONLY valid JSON."},
             ],
             max_tokens=800, temperature=0.2,
         )
-        raw = r.choices[0].message.content.strip()
         # Strip markdown fences
         import re
         raw = re.sub(r"```json|```", "", raw).strip()
@@ -1039,6 +1139,35 @@ async def api_agent_get_apikey():
         masked = key[:8] + "..." + key[-4:]
         return {"ok": True, "masked_key": masked}
     return {"ok": False}
+
+
+@app.get("/api/agent/mode")
+async def api_agent_get_mode():
+    """Get current AI provider mode and status."""
+    if ai_agent:
+        from ai_agent import _ollama_reachable
+        return {
+            "ok": True,
+            "mode": ai_agent.mode,
+            "provider": ai_agent.provider,
+            "model_name": ai_agent.model_name,
+            "ollama_reachable": _ollama_reachable(),
+            "groq_configured": bool(ai_agent.groq_client),
+        }
+    return {"ok": False, "error": "Agent not initialized"}
+
+
+@app.post("/api/agent/mode")
+async def api_agent_set_mode(request: Request):
+    """Switch AI provider mode ('ollama' | 'groq' | 'auto')."""
+    body = await request.json()
+    new_mode = body.get("mode", "").strip().lower()
+    if ai_agent:
+        success = ai_agent.set_mode(new_mode)
+        if success:
+            return {"ok": True, "mode": ai_agent.mode, "message": f"AI provider switched to {new_mode.upper()}"}
+        return {"ok": False, "error": "Invalid mode. Choose 'ollama', 'groq', or 'auto'."}
+    return {"ok": False, "error": "Agent not initialized"}
 
 
 # ── Patient Database Endpoints ──
@@ -1198,16 +1327,17 @@ async def api_clear_oled():
     return {"ok": True}
 
 
-@app.post("/api/simulate")
-async def api_simulate_event(request: Request):
-    """Simulate a wristband event. Always fires alert bypassing all cooldowns."""
-    body = await request.json()
-    event = body.get("event", "fall")
-    patient_id = body.get("patient_id", "P_01")
+async def trigger_simulated_event(event: str, patient_id: str = "108"):
+    """
+    Executes a complete simulated emergency event:
+    1. Updates ThresholdEngine & patient state
+    2. Broadcasts alert via WebSockets to all connected browser dashboards
+    3. Triggers AI Agent triage & Telegram alert with voice note
+    4. Forwards to Gateway OLED hardware
+    """
     state = engine.patients.get(patient_id)
     patient_name = state.name if state else ""
     if not patient_name:
-        # Fallback to DB
         try:
             p = db.get_patient(patient_id)
             if p: patient_name = p.get("name", "")
@@ -1216,44 +1346,78 @@ async def api_simulate_event(request: Request):
     if not patient_name:
         patient_name = f"Patient {patient_id}"
 
-    # Clear threshold engine cooldown so alert always fires
-    key = f"{patient_id}:fall" if event == "fall" else f"{patient_id}:{event}"
+    # Clear cooldowns so emergency alert fires instantly
+    key = f"{patient_id}:{event}"
     engine._cooldowns.pop(key, None)
     engine._cooldowns.pop(f"{patient_id}:sos", None)
-    # Clear OLED cooldown too
+    engine._cooldowns.pop(f"{patient_id}:fall", None)
     _last_oled_alert.pop(patient_id, None)
+
+    import unicodedata as _ud
+    def _ascii(t): return "".join(c for c in _ud.normalize("NFKD", t).encode("ascii", "ignore").decode("ascii") if 0x20 <= ord(c) <= 0x7E).strip()
+
+    if event == "flame":
+        hub_reading = HubReading(
+            air_ppm=480, air_aqi="Hazardous", flame=True,
+            env_temp=38.5, humidity=45.0,
+            pill_slot1=True, pill_slot2=False, pill_slot3=False, pill_slot4=False,
+        )
+        await handle_hub(hub_reading)
+        return {"ok": True, "simulated": "flame", "patient": "Smart Hub", "alert_broadcast": True}
+
+    is_sos = (event == "sos")
+    is_fall = (event == "fall")
+    is_cardiac = (event == "cardiac" or event == "hr_high")
+    is_spo2 = (event == "spo2_low")
+
+    hr = 152 if is_cardiac else 75
+    spo2 = 82 if is_spo2 else 96
+    if is_sos or is_fall:
+        hr = 128
+        spo2 = 91
 
     reading = VitalReading(
         patient_id=patient_id,
-        hr=145 if event == "hr_high" else 72,
-        spo2=78  if event == "spo2_low" else 97,
-        temp=37.2, bp_systolic=130, bp_diastolic=85,
-        sos=(event == "sos"), fall=(event == "fall"),
-        worn=True, rssi=-65,
+        hr=hr,
+        spo2=spo2,
+        temp=37.2,
+        bp_systolic=145 if is_cardiac else 125,
+        bp_diastolic=95 if is_cardiac else 82,
+        sos=is_sos,
+        fall=is_fall,
+        worn=True,
+        rssi=-65,
     )
 
-    # Directly broadcast the alert without cooldown for testing
-    import unicodedata as _ud
-    def _ascii(t): return "".join(c for c in _ud.normalize("NFKD",t).encode("ascii","ignore").decode("ascii") if 0x20<=ord(c)<=0x7E).strip()
-    title  = "FALL DETECTED" if event=="fall" else "SOS ALERT" if event=="sos" else event.upper()
-    msg    = f"{patient_name}: {title} — HR:{reading.hr} SpO2:{reading.spo2}%"
+    title = "SOS ALERT" if is_sos else "FALL DETECTED" if is_fall else "CARDIAC ALERT" if is_cardiac else "EMERGENCY ALERT"
+    msg = f"{patient_name}: {title} — HR:{reading.hr} SpO2:{reading.spo2}%"
+
     alert_dict = {
-        "id": "sim", "patient_id": patient_id, "patient_name": patient_name,
-        "alert_type": event, "severity": "emergency",
-        "message": msg, "value": event.upper(),
+        "id": f"sim_{int(time.time())}",
+        "patient_id": patient_id,
+        "patient_name": patient_name,
+        "alert_type": "sos" if is_sos else "fall" if is_fall else "hr_high" if is_cardiac else event,
+        "severity": "emergency",
+        "message": msg,
+        "value": title,
         "vitals_snapshot": {"hr": reading.hr, "spo2": reading.spo2, "temp": reading.temp, "bp_sys": reading.bp_systolic},
     }
+
+    # 1. Immediate broadcast to WebSockets
     await broadcast_alert(alert_dict)
 
-    # Also run through engine pipeline for proper state updates
+    # 2. Run through threshold engine & AI triage & Telegram bot
     await handle_vital(reading)
 
-    # Forward to Gateway OLED — use cmd:"emergency" for full-screen alert
+    # 3. Save to SQLite database
+    db.save_vital(patient_id, reading.hr, reading.spo2, reading.temp, reading.fall, reading.sos, 85)
+
+    # 4. Push to Gateway hardware
     if gateway_ws:
         try:
             await gateway_ws.send_text(json.dumps({
-                "cmd":   "emergency",
-                "type":  event,  # "fall" or "sos"
+                "cmd": "emergency",
+                "type": event,
                 "title": _ascii(title)[:18],
                 "notif": _ascii(msg)[:80],
                 "severity": "emergency",
@@ -1261,8 +1425,17 @@ async def api_simulate_event(request: Request):
         except Exception:
             pass
 
-    console.print(f"  [bold red]🧪 SIMULATED {event.upper()} for {patient_name}[/]")
+    console.print(f"  [bold red]🧪 SIMULATED {event.upper()} for {patient_name} → Dashboard + Telegram + WebSockets[/]")
     return {"ok": True, "simulated": event, "patient": patient_name, "alert_broadcast": True}
+
+
+@app.post("/api/simulate")
+async def api_simulate_event(request: Request):
+    """Simulate a wristband event. Always fires alert bypassing all cooldowns."""
+    body = await request.json()
+    event = body.get("event", "fall")
+    patient_id = body.get("patient_id", "108")
+    return await trigger_simulated_event(event, patient_id)
 
 
 @app.post("/api/dispatch")
@@ -1356,12 +1529,9 @@ async def api_get_alerts():
     return {"ok": True, "alerts": db.get_alerts_history()}
 
 @app.post("/api/simulate/{event_type}")
-async def api_simulate(event_type: str, patient_id: str = "P_01"):
+async def api_simulate(event_type: str, patient_id: str = "108"):
     """Trigger a demo event (sos, fall, cardiac, flame)."""
-    if mock_stream:
-        mock_stream.trigger_event(event_type, patient_id)
-        return {"ok": True, "event": event_type, "patient": patient_id}
-    return {"ok": False, "error": "Not in mock mode"}
+    return await trigger_simulated_event(event_type, patient_id)
 
 
 @app.post("/api/dispense/{slot}")
@@ -1513,13 +1683,12 @@ async def websocket_hub(websocket: WebSocket):
 @app.websocket("/ws/gateway")
 async def websocket_gateway(websocket: WebSocket):
     """WebSocket endpoint for Gateway ESP32 (acts as LoRa→WiFi bridge)."""
-    global gateway_ws, GATEWAY_CONNECTED, USE_MOCK, mock_stream
+    global gateway_ws, GATEWAY_CONNECTED
     await websocket.accept()
     gateway_ws = websocket
     GATEWAY_CONNECTED = True
     # ── Auto-switch to LIVE mode when real gateway connects ──
-    USE_MOCK = False
-    if mock_stream:
+    if USE_MOCK:
         console.print("  [yellow]⚡ Real Gateway connected → Mock stream suspended. Real data only.[/]")
     console.print("  [green]✓ Gateway ESP32 connected via WebSocket![/]")
     await broadcast_to_dashboards("gateway_status", {"connected": True, "live": True})
@@ -1557,17 +1726,20 @@ async def websocket_gateway(websocket: WebSocket):
                 if is_sos or is_fall or is_tremor:
                     console.print(f"  [bold red]🚨 EMERGENCY PKT from LoRa: fall={is_fall} sos={is_sos} tremor={is_tremor} node={node_id}[/]")
 
-                import random as _rnd, math as _math
-                _t = __import__('time').time()
-                _bp_sys = int(125 + _math.sin(_t * 0.005) * 8 + _rnd.randint(-4, 4))
-                _bp_dia = int(82 + _math.sin(_t * 0.007) * 5 + _rnd.randint(-3, 3))
+                _bp_sys = payload.get("bp_sys", 0)
+                _bp_dia = payload.get("bp_dia", 0)
+                if _bp_sys == 0 and USE_MOCK and not GATEWAY_CONNECTED:
+                    import random as _rnd, math as _math
+                    _t = __import__('time').time()
+                    _bp_sys = int(125 + _math.sin(_t * 0.005) * 8 + _rnd.randint(-4, 4))
+                    _bp_dia = int(82 + _math.sin(_t * 0.007) * 5 + _rnd.randint(-3, 3))
                 reading = VitalReading(
                     patient_id=node_id,
                     hr=payload.get("hr", 0),
                     spo2=payload.get("oxy", payload.get("spo2", 0)),
                     temp=payload.get("temp", 0.0),
-                    bp_systolic=payload.get("bp_sys", _bp_sys),
-                    bp_diastolic=payload.get("bp_dia", _bp_dia),
+                    bp_systolic=_bp_sys,
+                    bp_diastolic=_bp_dia,
                     lat=payload.get("lat", 18.0539),
                     lng=payload.get("lng", 79.5357),
                     sos=is_sos,
@@ -1617,8 +1789,7 @@ async def websocket_gateway(websocket: WebSocket):
     finally:
         gateway_ws = None
         GATEWAY_CONNECTED = False
-        USE_MOCK = True  # Resume mock so dashboard isn't empty
-        console.print("  [dim]Gateway ESP32 disconnected — resuming mock stream[/]")
+        console.print("  [dim]Gateway ESP32 disconnected — simulation resumes only when enabled[/]")
         await broadcast_to_dashboards("gateway_status", {"connected": False, "live": False})
 
 

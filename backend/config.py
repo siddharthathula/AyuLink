@@ -21,8 +21,9 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID   = int(os.getenv("TELEGRAM_CHAT_ID", "0"))
 TELEGRAM_ENABLED   = True  # Set False to disable bot
 
-# ── AI / Groq ────────────────────────────────────────────
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # ── Thresholds ───────────────────────────────────────────
 HR_WARNING_HIGH = 100
@@ -45,8 +46,8 @@ BP_DIA_WARNING = 90       # Stage 1 Hypertension
 BP_DIA_CRITICAL = 120     # Hypertensive Crisis
 BP_DIA_LOW = 60           # Hypotension
 
-AIR_QUALITY_WARNING = 150   # PPM
-AIR_QUALITY_CRITICAL = 300  # PPM
+AIR_QUALITY_WARNING = 300   # PPM
+AIR_QUALITY_CRITICAL = 500  # PPM
 
 # ── Alert Settings ───────────────────────────────────────
 ALERT_COOLDOWN_SECONDS = 5           # Demo: fire alert every 5s (was 30s)

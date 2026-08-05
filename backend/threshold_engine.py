@@ -21,7 +21,7 @@ class ThresholdEngine:
     Tracks per-patient state and generates alerts with cooldown.
     """
 
-    def __init__(self):
+    def __init__(self, use_mock: bool = False):
         self.patients: dict[str, PatientState] = {}
         self.hub_state = HubState()
         self.vitals_history: dict[str, deque] = {}
@@ -33,18 +33,19 @@ class ThresholdEngine:
             "start_time": time.time(),
         }
 
-        # Initialize known patients from config
-        for p in config.DEMO_PATIENTS:
-            self.patients[p["id"]] = PatientState(
-                id=p["id"],
-                name=p["name"],
-                age=p.get("age", 0),
-                village=p.get("village", ""),
-                conditions=p.get("conditions", []),
-                lat=p.get("lat", 0.0),
-                lng=p.get("lng", 0.0),
-            )
-            self.vitals_history[p["id"]] = deque(maxlen=120)  # Last 120 readings (~6 min at 3s)
+        # Initialize known patients from config only in mock mode
+        if use_mock:
+            for p in config.DEMO_PATIENTS:
+                self.patients[p["id"]] = PatientState(
+                    id=p["id"],
+                    name=p["name"],
+                    age=p.get("age", 0),
+                    village=p.get("village", ""),
+                    conditions=p.get("conditions", []),
+                    lat=p.get("lat", 0.0),
+                    lng=p.get("lng", 0.0),
+                )
+                self.vitals_history[p["id"]] = deque(maxlen=120)  # Last 120 readings (~6 min at 3s)
 
     def process_vital(self, reading: VitalReading) -> list[Alert]:
         """Process a vital reading and return any triggered alerts."""
@@ -333,7 +334,7 @@ class ThresholdEngine:
         cooldown = 2 if is_emergency else config.ALERT_COOLDOWN_SECONDS
 
         if now - last_time < cooldown:
-                return None
+            return None
 
         # Update cooldown (for non-emergency types only — emergencies reset on next call)
         self._cooldowns[key] = now

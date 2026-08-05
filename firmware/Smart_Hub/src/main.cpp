@@ -245,7 +245,7 @@ void loop() {
     if (WiFi.status() != WL_CONNECTED && wifiConnected) {
         wifiConnected = false;
         wsConnected   = false;
-        setLED(true, false, false);
+        setLED(100, 0, 0);
         Serial.println(F("[WiFi] Connection lost — reconnecting..."));
         setupWiFi();
         if (wifiConnected) setupWebSocket();
@@ -325,13 +325,13 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
 
     case WStype_DISCONNECTED:
         wsConnected = false;
-        setLED(true, false, false);   // Red = disconnected
+        setLED(100, 0, 0);   // Red = disconnected
         Serial.println(F("[WS] Disconnected from backend"));
         break;
 
     case WStype_CONNECTED:
         wsConnected = true;
-        setLED(false, true, false);  // Green = connected
+        setLED(0, 50, 0);  // Green = connected
         Serial.println(F("[WS] ✓ Connected to AyuLink backend!"));
         updateOLED("Backend Linked", "Ready for commands");
         buzzer(2, 80, 60);
@@ -489,11 +489,11 @@ void dispensePill(int slot) {
     // Return LED to connection state
     delay(500);
     if (wsConnected) {
-        setLED(false, true, false);
+        setLED(0, 50, 0);
     } else if (wifiConnected) {
-        setLED(false, true, false);
+        setLED(0, 50, 0);
     } else {
-        setLED(true, false, false);
+        setLED(100, 0, 0);
     }
 }
 
@@ -563,9 +563,9 @@ void handleButton1() {
 
             // Short LED flash to indicate selection
             for (int i = 0; i <= selectedSlot; i++) {
-                setLED(false, false, true);
+                setLED(0, 0, 100);
                 delay(80);
-                setLED(false, false, false);
+                setLED(0, 0, 0);
                 delay(60);
             }
 
@@ -605,23 +605,14 @@ void handleButton2() {
                 } else {
                     Serial.println(F("[BTN2] All slots already dispensed today!"));
                     buzzer(3, 50, 30);
-                    setLED(true, false, false);
+                    setLED(100, 0, 0);
                     delay(500);
-                    setLED(false, true, false);
+                    setLED(0, 50, 0);
                 }
             }
         }
     }
     lastBtn2State = state;
-}
-
-// ============================================================
-// STATUS LED (active HIGH)
-// ============================================================
-void setLED(bool r, bool g, bool b) {
-    digitalWrite(PIN_LED_R, r ? HIGH : LOW);
-    digitalWrite(PIN_LED_G, g ? HIGH : LOW);
-    digitalWrite(PIN_LED_B, b ? HIGH : LOW);
 }
 
 // ============================================================

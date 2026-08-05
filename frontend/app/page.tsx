@@ -123,15 +123,15 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0e1a] text-white overflow-x-hidden">
       {/* ═══ NAV ═══ */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 px-8 py-4 transition-all duration-500 ${scrollY > 50 ? 'bg-[#0a0e1a]/95 backdrop-blur-2xl border-b border-white/5 shadow-2xl' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20 p-1">
+      <nav className={`fixed top-0 left-0 right-0 z-50 px-4 sm:px-8 py-4 transition-all duration-500 ${scrollY > 50 ? 'bg-[#0a0e1a]/95 backdrop-blur-2xl border-b border-white/5 shadow-2xl' : 'bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20 p-1 shrink-0">
               <img src="/ayulink_logo.png" alt="AyuLink Logo" className="w-full h-full object-contain mix-blend-multiply" />
             </div>
-            <div>
+            <div className="min-w-0">
               <span className="text-lg font-bold tracking-tight">Ayu<span className="text-teal-400">Link</span></span>
-              <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-semibold">Smart Health. Zero Boundaries.</p>
+              <p className="hidden sm:block text-[10px] text-slate-500 uppercase tracking-[0.2em] font-semibold">Smart Health. Zero Boundaries.</p>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-8">
@@ -139,7 +139,7 @@ export default function LandingPage() {
               <a key={s} href={`#${s.toLowerCase()}`} className="text-xs text-slate-400 hover:text-teal-400 transition-colors uppercase tracking-[0.15em] font-bold">{s}</a>
             ))}
           </div>
-          <button onClick={() => router.push('/dashboard')} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 font-bold text-sm hover:shadow-lg hover:shadow-teal-500/25 hover:scale-105 transition-all tracking-wide">
+          <button onClick={() => router.push('/dashboard')} className="px-4 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 font-bold text-xs sm:text-sm hover:shadow-lg hover:shadow-teal-500/25 hover:scale-105 transition-all tracking-wide shrink-0 whitespace-nowrap">
             {t('experienceDemo')} →
           </button>
         </div>
@@ -165,7 +165,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black leading-[0.85] mb-8 tracking-tighter">
+          <h1 className="text-[clamp(1.7rem,9.5vw,8rem)] font-black leading-[0.85] mb-8 tracking-tighter">
             <span className="block text-white/90">{t('heroTitle1')}</span>
             <span className="block bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent py-3">{t('heroTitle2')}</span>
             <span className="block text-white/90">{t('heroTitle3')}</span>
@@ -203,7 +203,7 @@ export default function LandingPage() {
           {/* Key Differentiators Row — "Why We Win" */}
           <div className="max-w-5xl mx-auto">
             <p className="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold mb-4">5 Innovations • 1 Platform</p>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {[
                 { icon: Radio, label: 'LoRa Mesh', sub: 'Self-healing network', c: 'from-blue-500 to-cyan-500' },
                 { icon: Layers, label: 'Modular HW', sub: 'Swappable sensors', c: 'from-violet-500 to-purple-500' },
@@ -211,12 +211,12 @@ export default function LandingPage() {
                 { icon: Zap, label: 'AI Triage', sub: 'Risk scoring ML', c: 'from-amber-500 to-orange-500' },
                 { icon: Pill, label: 'Smart Dispenser', sub: 'IoT pill boxes', c: 'from-purple-500 to-indigo-500' },
               ].map((d, i) => (
-                <div key={i} className="group p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all text-center">
-                  <div className={`w-10 h-10 mx-auto rounded-lg bg-gradient-to-br ${d.c} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-lg`}>
+                <div key={i} className="group p-3 sm:p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-white/10 transition-all text-center min-w-0">
+                  <div className={`w-10 h-10 mx-auto rounded-lg bg-gradient-to-br ${d.c} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform shadow-lg shrink-0`}>
                     <d.icon className="h-5 w-5 text-white" />
                   </div>
-                  <p className="text-xs font-bold text-white">{d.label}</p>
-                  <p className="text-[10px] text-slate-600">{d.sub}</p>
+                  <p className="text-xs font-bold text-white break-words">{d.label}</p>
+                  <p className="text-[10px] text-slate-600 break-words">{d.sub}</p>
                 </div>
               ))}
             </div>
@@ -230,12 +230,12 @@ export default function LandingPage() {
       <section id="problem" className="py-28 px-8 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 to-transparent" />
         <div className="max-w-7xl mx-auto relative">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="min-w-0">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/8 border border-red-500/15 text-red-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
                 <AlertTriangle className="h-4 w-4" /> The Crisis
               </div>
-              <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight">
                 {t('problemTitle')}
               </h2>
               <p className="text-base text-slate-400 leading-relaxed mb-10">
@@ -259,17 +259,17 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 min-w-0">
               {[
                 { n: '70%', t: 'No Monitoring', d: 'Rural elderly without health checkups', c: 'text-red-400' },
                 { n: '45 min', t: 'Response Delay', d: 'vs 8 min in urban areas', c: 'text-orange-400' },
                 { n: '₹12K', t: 'Annual Burden', d: 'Per household healthcare cost', c: 'text-amber-400' },
                 { n: '65%', t: 'Internet Gap', d: 'Rural areas without connectivity', c: 'text-rose-400' },
               ].map((s, i) => (
-                <div key={i} className="p-7 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-all">
-                  <div className={`text-4xl font-black ${s.c} mb-2`}>{s.n}</div>
-                  <p className="text-sm font-bold text-white mb-1 uppercase tracking-wide">{s.t}</p>
-                  <p className="text-xs text-slate-500 leading-relaxed">{s.d}</p>
+                <div key={i} className="p-4 sm:p-7 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-all min-w-0">
+                  <div className={`text-3xl sm:text-4xl font-black ${s.c} mb-2 break-words`}>{s.n}</div>
+                  <p className="text-sm font-bold text-white mb-1 uppercase tracking-wide break-words">{s.t}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed break-words">{s.d}</p>
                 </div>
               ))}
             </div>
@@ -285,18 +285,18 @@ export default function LandingPage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/8 border border-indigo-500/15 text-indigo-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
               <TrendingUp className="h-4 w-4" /> {t('marketTitle')}
             </div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">A <span className="text-indigo-400">₹45,000 Crore</span> Gap</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4">A <span className="text-indigo-400">₹45,000 Crore</span> Gap</h2>
             <p className="text-base text-slate-400 max-w-xl mx-auto">India&apos;s rural healthtech market is massively underserved. The problem is growing faster than solutions.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-5 mb-12">
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-5 mb-12">
             {[
               { label: 'Total Addressable Market', value: '₹45,000 Cr', sub: 'Rural healthtech by 2028', color: 'text-indigo-400' },
               { label: 'Serviceable Market', value: '₹8,500 Cr', sub: 'IoT health monitoring segment', color: 'text-purple-400' },
               { label: 'Initial Target', value: '₹1,200 Cr', sub: 'Elderly care in 6 priority states', color: 'text-teal-400' },
             ].map((m, i) => (
-              <div key={i} className="p-8 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-center hover:border-white/10 transition-all">
+              <div key={i} className="p-5 sm:p-8 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-center hover:border-white/10 transition-all min-w-0">
                 <p className="text-xs text-slate-500 uppercase tracking-[0.15em] font-bold mb-4">{m.label}</p>
-                <p className={`text-5xl font-black ${m.color} mb-2`}>{m.value}</p>
+                <p className={`text-3xl sm:text-4xl md:text-5xl font-black ${m.color} mb-2 break-words`}>{m.value}</p>
                 <p className="text-sm text-slate-500">{m.sub}</p>
               </div>
             ))}
@@ -372,7 +372,7 @@ export default function LandingPage() {
       <section className="py-20 px-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-red-950/15 via-orange-950/10 to-red-950/15" />
         <div className="max-w-7xl mx-auto relative">
-          <div className="rounded-3xl border border-red-500/15 bg-gradient-to-br from-red-500/[0.04] to-orange-500/[0.04] p-10 md:p-14">
+          <div className="rounded-3xl border border-red-500/15 bg-gradient-to-br from-red-500/[0.04] to-orange-500/[0.04] p-6 sm:p-10 md:p-14">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
@@ -385,18 +385,18 @@ export default function LandingPage() {
                   When every second counts, paramedics get their own <strong className="text-white">dedicated mobile-first dashboard</strong> —
                   purpose-built for emergency response. No clutter, no logins. Just the critical info to save lives.
                 </p>
-                <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8">
                   {[
                     { icon: MapPin, label: 'GPS Dispatch', desc: 'Live patient location + fastest route' },
                     { icon: Activity, label: 'Vitals Preview', desc: 'Patient vitals before arrival' },
                     { icon: Phone, label: 'One-Tap Nav', desc: 'Google Maps integration' },
                     { icon: Clock, label: '<3 min ETA', desc: 'Average response time' },
                   ].map((f, i) => (
-                    <div key={i} className="flex gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                    <div key={i} className="flex gap-3 p-3.5 sm:p-4 min-w-0 items-start rounded-xl bg-white/[0.03] border border-white/[0.05]">
                       <f.icon className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-bold text-white">{f.label}</p>
-                        <p className="text-xs text-slate-500">{f.desc}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-white break-words">{f.label}</p>
+                        <p className="text-xs text-slate-500 break-words">{f.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -406,32 +406,32 @@ export default function LandingPage() {
                 </button>
               </div>
               <div className="relative">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   {[
                     { n: '<3 min', t: 'Avg Response', c: 'text-red-400', bg: 'bg-red-500/8' },
                     { n: '1-Tap', t: 'GPS Navigate', c: 'text-orange-400', bg: 'bg-orange-500/8' },
                     { n: 'Live', t: 'Vitals Feed', c: 'text-amber-400', bg: 'bg-amber-500/8' },
                     { n: 'QR Scan', t: 'Patient Handoff', c: 'text-rose-400', bg: 'bg-rose-500/8' },
                   ].map((s, i) => (
-                    <div key={i} className={`p-6 rounded-2xl ${s.bg} border border-white/[0.06] text-center`}>
-                      <p className={`text-3xl font-black ${s.c} mb-1`}>{s.n}</p>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{s.t}</p>
+                    <div key={i} className={`p-4 sm:p-6 rounded-2xl ${s.bg} border border-white/[0.06] text-center min-w-0`}>
+                      <p className={`text-2xl sm:text-3xl font-black ${s.c} mb-1 break-words`}>{s.n}</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide break-words">{s.t}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
                     <p className="text-sm font-bold text-white">Emergency Flow</p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className="px-2 py-1 rounded bg-red-500/10 text-red-400 font-bold">SOS Button</span>
-                    <ArrowRight className="h-3 w-3" />
-                    <span className="px-2 py-1 rounded bg-orange-500/10 text-orange-400 font-bold">WebSocket</span>
-                    <ArrowRight className="h-3 w-3" />
-                    <span className="px-2 py-1 rounded bg-amber-500/10 text-amber-400 font-bold">Paramedic App</span>
-                    <ArrowRight className="h-3 w-3" />
-                    <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold">Rescue</span>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2 text-xs text-slate-500">
+                    <span className="px-2.5 py-1.5 rounded bg-red-500/10 text-red-400 font-bold text-center">SOS Button</span>
+                    <ArrowRight className="h-3 w-3 self-center rotate-90 sm:rotate-0 shrink-0" />
+                    <span className="px-2.5 py-1.5 rounded bg-orange-500/10 text-orange-400 font-bold text-center">WebSocket</span>
+                    <ArrowRight className="h-3 w-3 self-center rotate-90 sm:rotate-0 shrink-0" />
+                    <span className="px-2.5 py-1.5 rounded bg-amber-500/10 text-amber-400 font-bold text-center">Paramedic App</span>
+                    <ArrowRight className="h-3 w-3 self-center rotate-90 sm:rotate-0 shrink-0" />
+                    <span className="px-2.5 py-1.5 rounded bg-emerald-500/10 text-emerald-400 font-bold text-center">Rescue</span>
                   </div>
                 </div>
               </div>
@@ -526,7 +526,7 @@ export default function LandingPage() {
             <div className="space-y-5">
 
               {/* Onboard sensors */}
-              <div className="p-7 rounded-2xl bg-white/[0.03] border border-purple-500/15">
+              <div className="p-5 sm:p-7 rounded-2xl bg-white/[0.03] border border-purple-500/15">
                 <h3 className="text-sm font-black text-white uppercase tracking-wider mb-5">4 Onboard Environment Sensors</h3>
                 <div className="space-y-4">
                   {[
@@ -535,16 +535,16 @@ export default function LandingPage() {
                     { icon: Clock, name: 'DS3231 Precision RTC', desc: 'Hardware real-time clock with battery backup — accurate scheduling even after power cut', spec: '±2 ppm accuracy', color: 'from-purple-500 to-indigo-500' },
                     { icon: AlertTriangle, name: 'Flame Sensor', desc: 'Detects fire near medicine cabinet — triggers emergency alert to dashboard instantly', spec: 'IR 760–1100nm', color: 'from-red-500 to-rose-500' },
                   ].map((s, i) => (
-                    <div key={i} className="flex items-start gap-4 group">
+                    <div key={i} className="flex items-start gap-4 group min-w-0">
                       <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform`}>
                         <s.icon className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                           <p className="text-sm font-black text-white">{s.name}</p>
-                          <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] font-black text-slate-500 uppercase tracking-wider shrink-0">{s.spec}</span>
+                          <span className="px-2 py-0.5 rounded bg-white/5 text-[9px] font-black text-slate-500 uppercase tracking-wider">{s.spec}</span>
                         </div>
-                        <p className="text-xs text-slate-500 leading-relaxed">{s.desc}</p>
+                        <p className="text-xs text-slate-500 leading-relaxed break-words">{s.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -554,7 +554,7 @@ export default function LandingPage() {
               {/* Connectivity */}
               <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
                 <h4 className="text-sm font-black text-white uppercase tracking-wider mb-3">Connectivity Stack</h4>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
                     { label: 'WiFi 2.4GHz', sub: 'WebSocket to backend', icon: '📡' },
                     { label: 'WebSocket', sub: 'Real-time dispense CMD', icon: '⚡' },
@@ -614,11 +614,11 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-violet-950/20 via-transparent to-blue-950/20" />
         <div className="max-w-7xl mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-14 items-center">
-            <div>
+            <div className="min-w-0">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/8 border border-violet-500/15 text-violet-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
                 <CircuitBoard className="h-4 w-4" /> Hardware Innovation
               </div>
-              <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight break-words">
                 <span className="text-violet-400">Modular</span> Sensor Architecture
               </h2>
               <p className="text-base text-slate-400 mb-10 leading-relaxed">
@@ -644,14 +644,14 @@ export default function LandingPage() {
               </div>
             </div>
             {/* Sensor Module Grid */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {sensorModules.map((s, i) => (
-                <div key={i} className="group p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-violet-500/20 transition-all">
+                <div key={i} className="group p-5 sm:p-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-violet-500/20 transition-all min-w-0">
                   <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
                     <s.icon className="h-7 w-7 text-white" />
                   </div>
-                  <h4 className="text-base font-bold text-white mb-1.5">{s.name}</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed mb-3">{s.desc}</p>
+                  <h4 className="text-base font-bold text-white mb-1.5 break-words">{s.name}</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed mb-3 break-words">{s.desc}</p>
                   <div className="px-3 py-1 rounded-lg bg-white/[0.05] inline-block">
                     <span className="text-xs font-bold text-slate-400 tracking-wider">{s.metric}</span>
                   </div>
@@ -779,11 +779,11 @@ export default function LandingPage() {
             </div>
             <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Tech <span className="text-amber-400">Stack</span></h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {techStack.map((t, i) => (
-              <div key={i} className={`p-6 rounded-2xl bg-gradient-to-b ${t.color} border border-white/[0.06] text-center hover:border-white/10 transition-all hover:scale-105`}>
-                <p className="font-black text-lg mb-1">{t.name}</p>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.15em]">{t.role}</p>
+              <div key={i} className={`p-5 sm:p-6 rounded-2xl bg-gradient-to-b ${t.color} border border-white/[0.06] text-center hover:border-white/10 transition-all hover:scale-105 min-w-0`}>
+                <p className="font-black text-lg mb-1 break-words">{t.name}</p>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-[0.15em] break-words">{t.role}</p>
               </div>
             ))}
           </div>

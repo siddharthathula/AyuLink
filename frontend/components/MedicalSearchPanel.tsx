@@ -225,7 +225,7 @@ export default function MedicalSearchPanel() {
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Search medicines, diseases, symptoms — powered by AI</p>
           </div>
           <div className="ml-auto flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-            {([['en','🇬🇧'],['hi','🇮🇳 हिं'],['te','🇮🇳 తె']] as const).map(([code, label]) => (
+            {([['en','EN'],['hi','हिंदी'],['te','తెలుగు']] as const).map(([code, label]) => (
               <button key={code} onClick={() => setLanguage(code as any)}
                 className="px-2 py-1 rounded-lg text-[11px] font-bold transition-all"
                 style={language === code ? { background: 'var(--accent)', color: '#fff' } : { color: 'var(--text-muted)' }}>{label}</button>
@@ -235,7 +235,7 @@ export default function MedicalSearchPanel() {
 
         {/* Type Selector */}
         <div className="flex gap-2 flex-wrap">
-          {([['auto','🔍 Auto'], ['medicine','💊 Medicine'], ['disease','🦠 Disease'], ['symptom','🩺 Symptom']] as const).map(([t, label]) => (
+          {([['auto','Auto'], ['medicine','Medicine'], ['disease','Disease'], ['symptom','Symptom']] as const).map(([t, label]) => (
             <button key={t} onClick={() => setSearchType(t)}
               className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
               style={searchType === t
