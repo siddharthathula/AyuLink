@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/lib/theme-context'
 import MobileAccessModal from '@/components/MobileAccessModal'
+import { motion } from 'framer-motion'
 import {
   Heart, Shield, Users, Radio, Clock, MapPin,
   Play, Building2, IndianRupee,
@@ -152,10 +153,12 @@ export default function LandingPage() {
           <div className="absolute top-1/4 left-1/3 w-[600px] max-w-full h-[600px] bg-teal-500/10 rounded-full blur-[180px]" />
           <div className="absolute bottom-1/3 right-1/4 w-[400px] max-w-full h-[400px] bg-indigo-500/8 rounded-full blur-[150px]" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 py-12 text-center w-full min-w-0">
-          {/* Hackfest badge */}
-
-
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative max-w-7xl mx-auto px-4 sm:px-8 py-12 text-center w-full min-w-0"
+        >
           {/* USP strip */}
           <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
             {['LoRa Mesh Network', 'Modular Sensors', 'Zero Internet', 'AI Triage', 'Smart Pill Dispenser', 'Paramedic EMS', 'Fall Detection', 'Hospital Ready'].map((usp, i) => (
@@ -192,11 +195,17 @@ export default function LandingPage() {
               { v: '10km+', l: 'Mesh Range', d: 'Per relay, expandable', c: 'text-blue-400' },
               { v: '₹0', l: 'Internet Cost', d: 'Works with or without internet', c: 'text-emerald-400' },
             ].map((s, i) => (
-              <div key={i} className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-all">
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 + i * 0.1 }}
+                className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-all text-center"
+              >
                 <p className={`text-3xl md:text-4xl font-black ${s.c}`}>{s.v}</p>
                 <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.15em] mt-1">{s.l}</p>
                 <p className="text-[10px] text-slate-600 mt-0.5">{s.d}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -223,7 +232,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-10 animate-bounce"><ChevronDown className="h-6 w-6 text-slate-600 mx-auto" /></div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ═══ PROBLEM ═══ */}
