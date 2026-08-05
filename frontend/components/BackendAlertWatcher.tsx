@@ -22,12 +22,16 @@ interface LiveAlert {
 const EMERGENCY_TYPES = new Set(['fall', 'sos', 'tremor', 'critical'])
 const ACTIVE_WINDOW_MS = 120 * 1000
 
+import { getBackendUrl as getCloudBackendUrl, getWsUrl as getCloudWsUrl, isVercelOrCloud } from '@/lib/backend-config'
+
 function getBackendUrl(path: string): string {
+    if (isVercelOrCloud()) return getCloudBackendUrl(path)
     const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
     return `http://${host}:8000${path}`
 }
 
-function getWsUrl(): string {
+function getWsUrl(): string | null {
+    if (isVercelOrCloud()) return null
     const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
     return `ws://${host}:8000/ws/dashboard`
 }
@@ -106,8 +110,10 @@ export default function BackendAlertWatcher() {
 
         const connectWs = () => {
             if (stoppedRef.current) return
+            const wsUrl = getWsUrl()
+            if (!wsUrl) return
             try {
-                const ws = new WebSocket(getWsUrl())
+                const ws = new WebSocket(wsUrl)
                 wsRef.current = ws
                 ws.onopen = () => {
                     if (reconnectRef.current) { clearTimeout(reconnectRef.current); reconnectRef.current = null }

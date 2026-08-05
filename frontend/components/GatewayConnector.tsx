@@ -54,6 +54,9 @@ export default function GatewayConnector() {
     }
 
     const connectToGateway = () => {
+        if (typeof window !== 'undefined' && (window.location.protocol === 'https:' || window.location.hostname.endsWith('vercel.app'))) {
+            return; // Skip raw WS connection on HTTPS / Vercel cloud
+        }
         try {
             const socket = new WebSocket(GATEWAY_WS_URL)
 

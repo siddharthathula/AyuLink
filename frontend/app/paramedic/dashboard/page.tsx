@@ -122,9 +122,11 @@ export default function ParamedicDashboard() {
         }
         let ws: WebSocket;
         const connectWS = () => {
-            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            // Defaulting to the same hostname and port 8000 for local backend
-            ws = new WebSocket(`${proto}//${window.location.hostname}:8000/ws/dashboard`)
+            if (typeof window !== 'undefined' && (window.location.protocol === 'https:' || window.location.hostname.endsWith('vercel.app'))) {
+                return; // Skip raw WS on HTTPS / Vercel cloud
+            }
+            try {
+                ws = new WebSocket(`ws://${window.location.hostname}:8000/ws/dashboard`)
             ws.onmessage = (event) => {
                 try {
                     const raw = JSON.parse(event.data);
@@ -152,6 +154,7 @@ export default function ParamedicDashboard() {
                     // Ignore parse errors
                 }
             }
+            } catch {}
         }
         connectWS()
 
