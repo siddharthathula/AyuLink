@@ -110,27 +110,30 @@ export function VitalsSparklineCard({ patientId, patientName, color = '#10b981',
 
   // WebSocket live updates
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') return
     const wsUrl = `ws://${window.location.hostname}:8000/ws/dashboard`
     let ws: WebSocket
     let dead = false
 
     const connect = () => {
       if (dead) return
-      ws = new WebSocket(wsUrl)
-      ws.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data)
-          if (msg.event === 'vital' && (msg.data.patient_id === patientId || msg.data.patient_id === 'P_01')) {
-            const d = msg.data
-            if (d.hr > 0) { setCurrentHr(d.hr); setHrHistory(p => addPoint(p, d.hr)) }
-            if (d.spo2 > 0) { setCurrentSpo2(d.spo2); setSpo2History(p => addPoint(p, d.spo2)) }
-            if (d.temp > 0) { setCurrentTemp(d.temp); setTempHistory(p => addPoint(p, d.temp)) }
-            if (d.bp_systolic > 0) { setCurrentBpSys(d.bp_systolic); setCurrentBpDia(d.bp_diastolic || 80); setBpHistory(p => addPoint(p, d.bp_systolic)) }
-          }
-        } catch { /* ignore */ }
-      }
-      ws.onclose = () => { if (!dead) setTimeout(connect, 2000) }
-      ws.onerror = () => ws.close()
+      try {
+        ws = new WebSocket(wsUrl)
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data)
+            if (msg.event === 'vital' && (msg.data.patient_id === patientId || msg.data.patient_id === 'P_01')) {
+              const d = msg.data
+              if (d.hr > 0) { setCurrentHr(d.hr); setHrHistory(p => addPoint(p, d.hr)) }
+              if (d.spo2 > 0) { setCurrentSpo2(d.spo2); setSpo2History(p => addPoint(p, d.spo2)) }
+              if (d.temp > 0) { setCurrentTemp(d.temp); setTempHistory(p => addPoint(p, d.temp)) }
+              if (d.bp_systolic > 0) { setCurrentBpSys(d.bp_systolic); setCurrentBpDia(d.bp_diastolic || 80); setBpHistory(p => addPoint(p, d.bp_systolic)) }
+            }
+          } catch { /* ignore */ }
+        }
+        ws.onclose = () => { if (!dead) setTimeout(connect, 4000) }
+        ws.onerror = () => ws.close()
+      } catch { /* ignore */ }
     }
 
     connect()

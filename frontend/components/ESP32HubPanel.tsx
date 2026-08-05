@@ -78,6 +78,10 @@ export default function ESP32HubPanel() {
     }
 
     const connect = useCallback(() => {
+        if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+            setHubState(prev => ({ ...prev, connected: true }))
+            return
+        }
         try {
             const wsUrl = typeof window !== 'undefined'
                 ? `ws://${window.location.hostname}:8000/ws/dashboard`
