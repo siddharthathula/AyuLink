@@ -66,11 +66,11 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                 <BackendAlertWatcher />
 
                 {/* Global Emergency Banner */}
-                <div className={`fixed top-0 left-0 right-0 z-[60] bg-red-600 text-white px-4 py-2 flex items-center justify-center gap-3 transition-transform duration-300 ${emergencyData?.active ? 'translate-y-0' : '-translate-y-full'}`}>
-                    <span className="animate-pulse font-bold text-lg">🚨 CRITICAL EMERGENCY ACTIVE</span>
+                <div className={`fixed top-0 left-0 right-0 z-[60] bg-red-600 text-white px-3 sm:px-4 py-2 flex items-center justify-center gap-2 sm:gap-3 transition-transform duration-300 max-w-full overflow-hidden text-center ${emergencyData?.active ? 'translate-y-0' : '-translate-y-full'}`}>
+                    <span className="animate-pulse font-bold text-xs sm:text-base truncate">🚨 CRITICAL EMERGENCY ACTIVE</span>
                     <button
                         onClick={dismissEmergency}
-                        className="ml-4 text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                        className="ml-2 text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded shrink-0"
                     >
                         Dismiss
                     </button>

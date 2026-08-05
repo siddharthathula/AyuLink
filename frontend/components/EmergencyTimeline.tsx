@@ -74,7 +74,7 @@ export default function EmergencyTimeline({ history, onTimeUpdate, isActive }: E
     const currentSnapshot = history[currentIndex]
 
     return (
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[95%] max-w-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 ring-1 ring-black/5 p-5 animate-slideUp z-[500]">
+        <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 w-[92%] sm:w-[95%] max-w-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 ring-1 ring-black/5 p-3 sm:p-5 animate-slideUp z-[500] max-w-[calc(100vw-1.5rem)]">
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">

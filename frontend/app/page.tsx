@@ -146,13 +146,13 @@ export default function LandingPage() {
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section className="relative min-h-screen flex items-center pt-20">
-        <div className="absolute inset-0 opacity-30"><MeshCanvas /></div>
-        <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[180px]" />
-          <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-indigo-500/8 rounded-full blur-[150px]" />
+      <section className="relative min-h-screen flex items-center pt-20 overflow-hidden w-full max-w-full">
+        <div className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden"><MeshCanvas /></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/3 w-[600px] max-w-full h-[600px] bg-teal-500/10 rounded-full blur-[180px]" />
+          <div className="absolute bottom-1/3 right-1/4 w-[400px] max-w-full h-[400px] bg-indigo-500/8 rounded-full blur-[150px]" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-8 py-12 text-center w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 py-12 text-center w-full min-w-0">
           {/* Hackfest badge */}
 
 
@@ -227,9 +227,9 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ PROBLEM ═══ */}
-      <section id="problem" className="py-28 px-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 to-transparent" />
-        <div className="max-w-7xl mx-auto relative">
+      <section id="problem" className="py-20 sm:py-28 px-4 sm:px-8 relative overflow-hidden w-full">
+        <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 to-transparent pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative min-w-0">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/8 border border-red-500/15 text-red-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">

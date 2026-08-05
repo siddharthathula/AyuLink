@@ -203,8 +203,8 @@ export default function EmergencyMapModal({ isOpen, onClose, data }: EmergencyMa
     }
 
     return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className={`bg-white dark:bg-slate-900 shadow-2xl overflow-hidden border-0 md:border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 relative transition-all flex flex-col ${isFullScreen ? 'fixed inset-0 w-screen h-screen rounded-none z-[10001]' : 'max-w-4xl w-full h-full md:h-[80vh] md:rounded-3xl'}`}>
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-hidden w-screen max-w-full h-screen max-h-full">
+            <div className={`bg-white dark:bg-slate-900 shadow-2xl overflow-hidden border-0 md:border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 relative transition-all flex flex-col w-full max-w-full max-h-full ${isFullScreen ? 'fixed inset-0 w-screen h-screen rounded-none z-[10001]' : 'max-w-4xl h-full md:h-[80vh] md:rounded-3xl'}`}>
 
                 {/* Header */}
                 <div className="bg-slate-900 text-white px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-lg z-20 shrink-0">
