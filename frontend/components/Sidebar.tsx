@@ -137,22 +137,28 @@ export default function Sidebar({ emergencyActive = false }: { emergencyActive?:
             )}
 
             {/* Sidebar */}
-            <aside className={`fixed left-0 w-64 sidebar text-white flex flex-col z-50 transition-all duration-300 ${!mobileMenuOpen ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'
+            <aside className={`fixed left-0 w-[280px] sm:w-64 max-w-[85vw] sidebar text-white flex flex-col z-50 transition-all duration-300 ${!mobileMenuOpen ? '-translate-x-full lg:translate-x-0' : 'translate-x-0'
                 } ${emergencyActive ? 'top-10 h-[calc(100vh-2.5rem)]' : 'top-0 h-screen'}`}>
-                {/* Logo */}
-                <div className="p-6 border-b border-white/10">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg animate-float p-1">
+                {/* Logo & Mobile Close */}
+                <div className="p-5 border-b border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg p-1 shrink-0">
                             <img src="/ayulink_logo.png" alt="AyuLink Logo" className="w-full h-full object-contain mix-blend-multiply" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="font-extrabold text-xl tracking-tight text-white">AyuLink</h1>
-                                <Sparkles className="h-4 w-4 text-emerald-400" />
+                            <div className="flex items-center gap-1.5">
+                                <h1 className="font-extrabold text-lg tracking-tight text-white">AyuLink</h1>
+                                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
                             </div>
-                            <p className="text-xs text-teal-200/80">Smart Health. Zero Boundaries.</p>
+                            <p className="text-[10px] text-teal-200/80">Smart Health. Zero Boundaries.</p>
                         </div>
                     </div>
+                    <button
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="lg:hidden p-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
                 </div>
 
                 {/* Navigation */}

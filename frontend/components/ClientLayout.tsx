@@ -77,10 +77,10 @@ export default function ClientLayout({ children }: { children: ReactNode }) {
                 </div>
 
                 {/* Wrapper with proper background */}
-                <div className={`min-h-screen transition-all duration-300 ${emergencyData?.active ? 'pt-10' : ''}`} style={{ background: 'var(--bg-primary)' }}>
+                <div className={`min-h-screen transition-all duration-300 w-full max-w-full overflow-x-hidden ${emergencyData?.active ? 'pt-10' : ''}`} style={{ background: 'var(--bg-primary)' }}>
                     <Sidebar emergencyActive={!!emergencyData?.active} />
-                    <div className="lg:ml-64 pt-16 lg:pt-0">
-                        <main className="p-4 min-h-screen transition-colors duration-300 relative">
+                    <div className="lg:ml-64 pt-16 lg:pt-0 w-full max-w-full overflow-x-hidden">
+                        <main className="p-3 sm:p-6 min-h-screen transition-colors duration-300 relative w-full max-w-full overflow-x-hidden">
                             {emergencyData?.active && (
                                 <div className="absolute inset-0 border-[6px] border-red-500/50 pointer-events-none z-50 animate-pulse"></div>
                             )}
