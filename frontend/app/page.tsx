@@ -24,8 +24,8 @@ function MeshCanvas() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    let width = canvas.width = canvas.parentElement?.offsetWidth || 600
-    let height = canvas.height = canvas.parentElement?.offsetHeight || 400
+    let width = canvas.width = Math.min(canvas.parentElement?.clientWidth || (typeof window !== 'undefined' ? window.innerWidth : 360), typeof window !== 'undefined' ? window.innerWidth : 360)
+    let height = canvas.height = canvas.parentElement?.clientHeight || 400
     let animationId: number
     const nodes: { x: number; y: number; vx: number; vy: number; r: number; type: string; pulse: number }[] = []
     for (let i = 0; i < 22; i++) {
@@ -369,69 +369,69 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ PARAMEDIC EMS DASHBOARD ═══ */}
-      <section className="py-20 px-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-red-950/15 via-orange-950/10 to-red-950/15" />
-        <div className="max-w-7xl mx-auto relative">
-          <div className="rounded-3xl border border-red-500/15 bg-gradient-to-br from-red-500/[0.04] to-orange-500/[0.04] p-6 sm:p-10 md:p-14">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
-                  <Siren className="h-4 w-4" /> Dedicated Paramedic Portal
+      <section className="py-12 sm:py-20 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+        <div className="absolute inset-0 bg-gradient-to-r from-red-950/15 via-orange-950/10 to-red-950/15 pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative min-w-0 w-full">
+          <div className="rounded-2xl sm:rounded-3xl border border-red-500/15 bg-gradient-to-br from-red-500/[0.04] to-orange-500/[0.04] p-4 sm:p-8 md:p-14 min-w-0 max-w-full overflow-hidden">
+            <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center min-w-0">
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mb-4 sm:mb-6 max-w-full">
+                  <Siren className="h-3.5 w-3.5 shrink-0" /> Dedicated Paramedic Portal
                 </div>
-                <h2 className="text-3xl md:text-4xl font-black mb-4 tracking-tight leading-tight">
+                <h2 className="text-2xl sm:text-4xl font-black mb-4 tracking-tight leading-tight break-words">
                   Separate <span className="text-red-400">EMS Dashboard</span> for Paramedics
                 </h2>
-                <p className="text-base text-slate-400 mb-8 leading-relaxed">
+                <p className="text-xs sm:text-base text-slate-400 mb-6 sm:mb-8 leading-relaxed break-words">
                   When every second counts, paramedics get their own <strong className="text-white">dedicated mobile-first dashboard</strong> —
                   purpose-built for emergency response. No clutter, no logins. Just the critical info to save lives.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4 mb-6 sm:mb-8 min-w-0">
                   {[
                     { icon: MapPin, label: 'GPS Dispatch', desc: 'Live patient location + fastest route' },
                     { icon: Activity, label: 'Vitals Preview', desc: 'Patient vitals before arrival' },
                     { icon: Phone, label: 'One-Tap Nav', desc: 'Google Maps integration' },
                     { icon: Clock, label: '<3 min ETA', desc: 'Average response time' },
                   ].map((f, i) => (
-                    <div key={i} className="flex gap-3 p-3.5 sm:p-4 min-w-0 items-start rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                      <f.icon className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-white break-words">{f.label}</p>
-                        <p className="text-xs text-slate-500 break-words">{f.desc}</p>
+                    <div key={i} className="flex gap-2.5 p-3 sm:p-4 min-w-0 items-start rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                      <f.icon className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-bold text-white break-words">{f.label}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500 break-words">{f.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <button onClick={() => setShowMobileAccess(true)} className="flex items-center gap-3 px-8 py-3.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 font-bold text-base hover:shadow-xl hover:shadow-red-500/20 hover:scale-105 transition-all">
-                  <Siren className="h-5 w-5" /> Open Paramedic Dashboard
+                <button onClick={() => setShowMobileAccess(true)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-8 py-3 sm:py-3.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 font-bold text-xs sm:text-base hover:shadow-xl hover:shadow-red-500/20 hover:scale-105 transition-all text-center">
+                  <Siren className="h-4 w-4 shrink-0" /> <span>Open Paramedic Dashboard</span>
                 </button>
               </div>
-              <div className="relative">
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="relative min-w-0 w-full">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-4 min-w-0">
                   {[
                     { n: '<3 min', t: 'Avg Response', c: 'text-red-400', bg: 'bg-red-500/8' },
                     { n: '1-Tap', t: 'GPS Navigate', c: 'text-orange-400', bg: 'bg-orange-500/8' },
                     { n: 'Live', t: 'Vitals Feed', c: 'text-amber-400', bg: 'bg-amber-500/8' },
                     { n: 'QR Scan', t: 'Patient Handoff', c: 'text-rose-400', bg: 'bg-rose-500/8' },
                   ].map((s, i) => (
-                    <div key={i} className={`p-4 sm:p-6 rounded-2xl ${s.bg} border border-white/[0.06] text-center min-w-0`}>
-                      <p className={`text-2xl sm:text-3xl font-black ${s.c} mb-1 break-words`}>{s.n}</p>
-                      <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide break-words">{s.t}</p>
+                    <div key={i} className={`p-3 sm:p-6 rounded-xl sm:rounded-2xl ${s.bg} border border-white/[0.06] text-center min-w-0`}>
+                      <p className={`text-xl sm:text-3xl font-black ${s.c} mb-0.5 break-words`}>{s.n}</p>
+                      <p className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide break-words">{s.t}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-                    <p className="text-sm font-bold text-white">Emergency Flow</p>
+                <div className="mt-3 sm:mt-4 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/[0.06] min-w-0">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                    <p className="text-xs sm:text-sm font-bold text-white">Emergency Flow</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2 text-xs text-slate-500">
-                    <span className="px-2.5 py-1.5 rounded bg-red-500/10 text-red-400 font-bold text-center">SOS Button</span>
-                    <ArrowRight className="h-3 w-3 self-center rotate-90 sm:rotate-0 shrink-0" />
-                    <span className="px-2.5 py-1.5 rounded bg-orange-500/10 text-orange-400 font-bold text-center">WebSocket</span>
-                    <ArrowRight className="h-3 w-3 self-center rotate-90 sm:rotate-0 shrink-0" />
-                    <span className="px-2.5 py-1.5 rounded bg-amber-500/10 text-amber-400 font-bold text-center">Paramedic App</span>
-                    <ArrowRight className="h-3 w-3 self-center rotate-90 sm:rotate-0 shrink-0" />
-                    <span className="px-2.5 py-1.5 rounded bg-emerald-500/10 text-emerald-400 font-bold text-center">Rescue</span>
+                  <div className="flex flex-wrap items-center justify-start gap-1.5 text-[10px] sm:text-xs text-slate-500 min-w-0">
+                    <span className="px-2 py-1 rounded bg-red-500/10 text-red-400 font-bold text-center">SOS Button</span>
+                    <ArrowRight className="h-3 w-3 text-slate-500 shrink-0" />
+                    <span className="px-2 py-1 rounded bg-orange-500/10 text-orange-400 font-bold text-center">WebSocket</span>
+                    <ArrowRight className="h-3 w-3 text-slate-500 shrink-0" />
+                    <span className="px-2 py-1 rounded bg-amber-500/10 text-amber-400 font-bold text-center">Paramedic App</span>
+                    <ArrowRight className="h-3 w-3 text-slate-500 shrink-0" />
+                    <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold text-center">Rescue</span>
                   </div>
                 </div>
               </div>
@@ -610,13 +610,13 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-      <section id="hardware" className="py-28 px-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-950/20 via-transparent to-blue-950/20" />
-        <div className="max-w-7xl mx-auto relative">
-          <div className="grid lg:grid-cols-2 gap-14 items-center">
+      <section id="hardware" className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-950/20 via-transparent to-blue-950/20 pointer-events-none" />
+        <div className="max-w-7xl mx-auto relative min-w-0 w-full">
+          <div className="grid lg:grid-cols-2 gap-8 sm:gap-14 items-center min-w-0">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/8 border border-violet-500/15 text-violet-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
-                <CircuitBoard className="h-4 w-4" /> Hardware Innovation
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/8 border border-violet-500/15 text-violet-400 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mb-4 sm:mb-6 max-w-full">
+                <CircuitBoard className="h-3.5 w-3.5 shrink-0" /> Hardware Innovation
               </div>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight break-words">
                 <span className="text-violet-400">Modular</span> Sensor Architecture
@@ -663,8 +663,8 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ MESH NETWORK EFFECT ═══ */}
-      <section className="py-28 px-8 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative">
+      <section className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+        <div className="max-w-7xl mx-auto relative min-w-0 w-full">
           <div className="grid lg:grid-cols-2 gap-14 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/8 border border-teal-500/15 text-teal-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
@@ -714,8 +714,8 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ ALL FEATURES ═══ */}
-      <section id="features" className="py-28 px-8 bg-gradient-to-b from-[#0a0e1a] via-slate-900/30 to-[#0a0e1a]">
-        <div className="max-w-7xl mx-auto">
+      <section id="features" className="py-16 sm:py-28 px-3 sm:px-8 bg-gradient-to-b from-[#0a0e1a] via-slate-900/30 to-[#0a0e1a] w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto min-w-0 w-full">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/8 border border-purple-500/15 text-purple-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
               <Cpu className="h-4 w-4" /> Platform
@@ -741,8 +741,8 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ HOW IT WORKS ═══ */}
-      <section className="py-28 px-8">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-16 sm:py-28 px-3 sm:px-8 w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto min-w-0 w-full">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/8 border border-blue-500/15 text-blue-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
               <Globe className="h-4 w-4" /> {t('howItWorks')}
@@ -771,8 +771,8 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ TECH STACK ═══ */}
-      <section id="tech" className="py-28 px-8 bg-gradient-to-b from-[#0a0e1a] to-slate-900/20">
-        <div className="max-w-7xl mx-auto">
+      <section id="tech" className="py-16 sm:py-28 px-3 sm:px-8 bg-gradient-to-b from-[#0a0e1a] to-slate-900/20 w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto min-w-0 w-full">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/8 border border-amber-500/15 text-amber-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
               <Cpu className="h-4 w-4" /> Built With
@@ -804,10 +804,10 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ FINAL CTA ═══ */}
-      <section className="py-28 px-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-teal-950/30 to-transparent" />
-        <div className="absolute inset-0 opacity-15"><MeshCanvas /></div>
-        <div className="max-w-4xl mx-auto text-center relative">
+      <section className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+        <div className="absolute inset-0 bg-gradient-to-t from-teal-950/30 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 opacity-15 pointer-events-none"><MeshCanvas /></div>
+        <div className="max-w-4xl mx-auto text-center relative min-w-0 w-full">
           <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">
             {t('readyLive')}
           </h2>
@@ -826,7 +826,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer className="py-8 px-8 border-t border-white/[0.04]">
+      <footer className="py-6 sm:py-8 px-3 sm:px-8 border-t border-white/[0.04] w-full max-w-full overflow-hidden">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center p-0.5">
