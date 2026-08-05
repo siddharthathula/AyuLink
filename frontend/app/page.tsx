@@ -236,7 +236,14 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ PROBLEM ═══ */}
-      <section id="problem" className="py-20 sm:py-28 px-4 sm:px-8 relative overflow-hidden w-full">
+      <motion.section
+        id="problem"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-20 sm:py-28 px-4 sm:px-8 relative overflow-hidden w-full"
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto relative min-w-0">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -284,10 +291,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ MARKET OPPORTUNITY ═══ */}
-      <section id="market" className="py-28 px-8 relative overflow-hidden">
+      <motion.section
+        id="market"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-28 px-8 relative overflow-hidden"
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a] via-indigo-950/20 to-[#0a0e1a]" />
         <div className="max-w-7xl mx-auto relative">
           <div className="text-center mb-16">
@@ -345,10 +359,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ SOLUTION ═══ */}
-      <section id="solution" className="py-28 px-8 relative overflow-hidden">
+      <motion.section
+        id="solution"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-28 px-8 relative overflow-hidden"
+      >
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-[200px]" />
         <div className="max-w-7xl mx-auto relative">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/8 border border-teal-500/15 text-teal-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
@@ -375,10 +396,16 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ PARAMEDIC EMS DASHBOARD ═══ */}
-      <section className="py-12 sm:py-20 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-12 sm:py-20 px-3 sm:px-8 relative overflow-hidden w-full max-w-full"
+      >
         <div className="absolute inset-0 bg-gradient-to-r from-red-950/15 via-orange-950/10 to-red-950/15 pointer-events-none" />
         <div className="max-w-7xl mx-auto relative min-w-0 w-full">
           <div className="rounded-2xl sm:rounded-3xl border border-red-500/15 bg-gradient-to-br from-red-500/[0.04] to-orange-500/[0.04] p-4 sm:p-8 md:p-14 min-w-0 max-w-full overflow-hidden">
@@ -447,10 +474,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ SMART PILL DISPENSER DEEP-DIVE ═══ */}
-      <section id="dispenser" className="py-28 px-8 relative overflow-hidden">
+      <motion.section
+        id="dispenser"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-28 px-8 relative overflow-hidden"
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-purple-950/30 via-indigo-950/20 to-[#0a0e1a]" />
         <div className="absolute top-0 left-1/3 w-[700px] h-[400px] bg-purple-500/6 rounded-full blur-[200px]" />
         <div className="max-w-7xl mx-auto relative">
@@ -618,8 +652,16 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
-      <section id="hardware" className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+      </motion.section>
+      {/* ═══ HARDWARE ARCHITECTURE ═══ */}
+      <motion.section
+        id="hardware"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full"
+      >
         <div className="absolute inset-0 bg-gradient-to-r from-violet-950/20 via-transparent to-blue-950/20 pointer-events-none" />
         <div className="max-w-7xl mx-auto relative min-w-0 w-full">
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-14 items-center min-w-0">
@@ -669,10 +711,16 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ MESH NETWORK EFFECT ═══ */}
-      <section className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full"
+      >
         <div className="max-w-7xl mx-auto relative min-w-0 w-full">
           <div className="grid lg:grid-cols-2 gap-14 items-center">
             <div>
@@ -720,10 +768,17 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ ALL FEATURES ═══ */}
-      <section id="features" className="py-16 sm:py-28 px-3 sm:px-8 bg-gradient-to-b from-[#0a0e1a] via-slate-900/30 to-[#0a0e1a] w-full max-w-full overflow-hidden">
+      <motion.section
+        id="features"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-16 sm:py-28 px-3 sm:px-8 bg-gradient-to-b from-[#0a0e1a] via-slate-900/30 to-[#0a0e1a] w-full max-w-full overflow-hidden"
+      >
         <div className="max-w-7xl mx-auto min-w-0 w-full">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/8 border border-purple-500/15 text-purple-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
@@ -747,10 +802,16 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ HOW IT WORKS ═══ */}
-      <section className="py-16 sm:py-28 px-3 sm:px-8 w-full max-w-full overflow-hidden">
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-16 sm:py-28 px-3 sm:px-8 w-full max-w-full overflow-hidden"
+      >
         <div className="max-w-7xl mx-auto min-w-0 w-full">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/8 border border-blue-500/15 text-blue-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
@@ -777,10 +838,17 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ TECH STACK ═══ */}
-      <section id="tech" className="py-16 sm:py-28 px-3 sm:px-8 bg-gradient-to-b from-[#0a0e1a] to-slate-900/20 w-full max-w-full overflow-hidden">
+      <motion.section
+        id="tech"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-16 sm:py-28 px-3 sm:px-8 bg-gradient-to-b from-[#0a0e1a] to-slate-900/20 w-full max-w-full overflow-hidden"
+      >
         <div className="max-w-7xl mx-auto min-w-0 w-full">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/8 border border-amber-500/15 text-amber-400 text-xs font-bold uppercase tracking-[0.2em] mb-6">
@@ -810,10 +878,16 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ FINAL CTA ═══ */}
-      <section className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full">
+      <motion.section
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.6 }}
+        className="py-16 sm:py-28 px-3 sm:px-8 relative overflow-hidden w-full max-w-full"
+      >
         <div className="absolute inset-0 bg-gradient-to-t from-teal-950/30 to-transparent pointer-events-none" />
         <div className="absolute inset-0 opacity-15 pointer-events-none"><MeshCanvas /></div>
         <div className="max-w-4xl mx-auto text-center relative min-w-0 w-full">
@@ -832,7 +906,7 @@ export default function LandingPage() {
             </button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ═══ FOOTER ═══ */}
       <footer className="py-6 sm:py-8 px-3 sm:px-8 border-t border-white/[0.04] w-full max-w-full overflow-hidden">
